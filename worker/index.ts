@@ -5,6 +5,9 @@ import handler from "vinext/server/app-router-entry";
 interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
+  SUPER_ADMIN_EMAIL?: string;
+  PRAYER_ENCRYPTION_KEY?: string;
+  IP_HASH_SALT?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -27,6 +30,10 @@ interface ExecutionContext {
 
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Vinext route handlers read the request-scoped platform bindings through
+    // this immutable runtime reference. The binding object is the same for all
+    // requests handled by a deployed site isolate.
+    (globalThis as typeof globalThis & { __PIBRG_ENV__?: Env }).__PIBRG_ENV__ = env;
     const url = new URL(request.url);
 
     if (url.pathname === "/_vinext/image") {

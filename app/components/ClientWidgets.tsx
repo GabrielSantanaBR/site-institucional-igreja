@@ -1,11 +1,28 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { sermons } from "../data";
 
 export function PrayerForm() {
   const [sent, setSent] = useState(false);
-  if (sent) return <div className="form-success" role="status"><span aria-hidden="true">✓</span><h2>Recebemos seu pedido.</h2><p>Nesta demonstração, o envio termina aqui. Na versão final, ele pode chegar à equipe de intercessão por e-mail ou painel administrativo.</p><button type="button" className="text-link" onClick={() => setSent(false)}>Enviar outro pedido →</button></div>;
-  return <form className="styled-form" onSubmit={e => { e.preventDefault(); setSent(true); }}><div className="form-row"><label>Seu nome<input name="name" autoComplete="name" required placeholder="Como podemos chamar você?" /></label><label>Contato<input name="contact" autoComplete="email" required placeholder="E-mail ou WhatsApp" /></label></div><label>Como podemos orar?<select name="subject" defaultValue=""><option value="" disabled>Selecione um assunto</option><option>Família</option><option>Saúde</option><option>Trabalho e estudos</option><option>Vida espiritual</option><option>Outro</option></select></label><label>Seu pedido<textarea name="message" required rows={6} placeholder="Compartilhe apenas o que se sentir confortável em contar." /></label><label className="check-label"><input type="checkbox" required /><span>Autorizo que a equipe de intercessão receba este pedido de forma confidencial.</span></label><button className="button button-green" type="submit">Enviar pedido de oração</button><p className="privacy-note">Se preferir, marque “anônimo” no início da mensagem. Seus dados não serão exibidos publicamente.</p></form>;
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setSending(true); setError("");
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    try {
+      const response = await fetch("/api/prayer-requests", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: data.get("name"), contact: data.get("contact"), subject: data.get("subject"), message: data.get("message"), website: data.get("website"), consent: data.get("consent") === "on" }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Não foi possível enviar.");
+      form.reset(); setSent(true);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível enviar o pedido."); }
+    finally { setSending(false); }
+  }
+  if (sent) return <div className="form-success" role="status"><span aria-hidden="true">✓</span><h2>Recebemos seu pedido.</h2><p>Ele foi protegido e encaminhado ao painel confidencial da equipe autorizada.</p><button type="button" className="text-link" onClick={() => setSent(false)}>Enviar outro pedido →</button></div>;
+  return <form className="styled-form" onSubmit={submit}><div className="form-row"><label>Seu nome <small>(opcional)</small><input name="name" autoComplete="name" maxLength={100} placeholder="Você também pode enviar anonimamente" /></label><label>Contato <small>(opcional)</small><input name="contact" autoComplete="email" maxLength={160} placeholder="E-mail ou WhatsApp" /></label></div><label>Como podemos orar?<select name="subject" defaultValue="" required><option value="" disabled>Selecione um assunto</option><option>Família</option><option>Saúde</option><option>Trabalho e estudos</option><option>Vida espiritual</option><option>Outro</option></select></label><label>Seu pedido<textarea name="message" required minLength={10} maxLength={4000} rows={6} placeholder="Compartilhe apenas o que se sentir confortável em contar." /></label><label className="form-honeypot" aria-hidden="true">Não preencha<input name="website" tabIndex={-1} autoComplete="off" /></label><label className="check-label"><input name="consent" type="checkbox" required /><span>Autorizo que a equipe de intercessão receba este pedido de forma confidencial.</span></label>{error && <p className="form-error" role="alert">{error}</p>}<button className="button button-green" type="submit" disabled={sending}>{sending ? "Protegendo e enviando…" : "Enviar pedido de oração"}</button><p className="privacy-note">O conteúdo é criptografado e não será exibido publicamente.</p></form>;
 }
 
 export function EventSignup() {

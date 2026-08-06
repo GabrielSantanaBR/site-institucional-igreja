@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 const nav = [["Início", "/"], ["Nossa Igreja", "/nossa-igreja"], ["Liderança", "/lideranca"], ["Agenda", "/agenda"], ["Sermões", "/sermoes"], ["Galeria", "/galeria"], ["Devocionais", "/devocionais"]];
@@ -10,7 +11,9 @@ function Brand() {
 }
 
 export function SiteShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  if (pathname.startsWith("/acesso-interno")) return <>{children}</>;
   return <>
     <div className="demo-bar">PIBRG • Servindo a Deus e à comunidade em Guadalupe</div>
     <header className="site-header"><div className="container header-inner"><Brand /><nav className="desktop-nav" aria-label="Navegação principal">{nav.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}</nav><Link className="header-cta" href="/pedido-de-oracao">Pedido de oração</Link><button className={`menu-button ${open ? "is-open" : ""}`} type="button" aria-label={open ? "Fechar menu" : "Abrir menu"} aria-controls="mobile-menu" aria-expanded={open} onClick={() => setOpen(v => !v)}><span /><span /></button></div><div className={`mobile-menu ${open ? "is-open" : ""}`} id="mobile-menu"><nav aria-label="Navegação para celular">{nav.map(([label, href]) => <Link href={href} key={href} onClick={() => setOpen(false)}>{label}<span>→</span></Link>)}<Link className="mobile-prayer" href="/pedido-de-oracao" onClick={() => setOpen(false)}>Pedido de oração</Link></nav></div></header>
