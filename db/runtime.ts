@@ -16,6 +16,8 @@ type RuntimeEnvironment = {
   PRAYER_ENCRYPTION_KEY?: string;
   IP_HASH_SALT?: string;
   PRAYER_NOTIFICATION_EMAIL?: string;
+  BREVO_API_KEY?: string;
+  BREVO_SENDER_EMAIL?: string;
 };
 
 export function getRuntimeEnvironment(): RuntimeEnvironment {
