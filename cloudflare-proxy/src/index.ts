@@ -139,8 +139,16 @@ export default {
       redirect: "manual",
     }));
 
-    if (prayerPayload && upstreamResponse.status === 201) {
-      ctx.waitUntil(sendPrayerNotification(env, prayerPayload));
+    if (prayerPayload && upstreamResponse.ok) {
+      try {
+        const result: unknown = await upstreamResponse.clone().json();
+        if (result && typeof result === "object" && !Array.isArray(result)
+          && (result as Record<string, unknown>).ok === true) {
+          ctx.waitUntil(sendPrayerNotification(env, prayerPayload));
+        }
+      } catch {
+        console.error(JSON.stringify({ event: "prayer_storage_confirmation_invalid" }));
+      }
     }
 
     const responseHeaders = new Headers(upstreamResponse.headers);
