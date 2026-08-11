@@ -1,5 +1,6 @@
 import { ensureDatabase, getD1 } from "../../../db/runtime";
 import { encryptPrayer, hashIp } from "../../../lib/prayer-security";
+import { notifyPrayerByEmail } from "../../../lib/prayer-notification";
 
 const allowedSubjects = ["Família", "Saúde", "Trabalho e estudos", "Vida espiritual", "Outro"];
 
@@ -35,7 +36,14 @@ export async function POST(request: Request) {
       "INSERT INTO prayer_requests (encrypted_payload, subject, source_ip_hash) VALUES (?, ?, ?)"
     ).bind(encrypted, subject, ipHash).run();
 
-    return Response.json({ ok: true }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    const emailNotified = await notifyPrayerByEmail({
+      name: name || "Anônimo",
+      contact,
+      subject,
+      message,
+    });
+
+    return Response.json({ ok: true, emailNotified }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("prayer submission failed", error instanceof Error ? error.message : "unknown error");
     return Response.json({ error: "Não foi possível registrar o pedido agora. Tente novamente em alguns minutos." }, { status: 500 });

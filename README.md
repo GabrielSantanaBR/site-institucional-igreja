@@ -1,5 +1,17 @@
 # vinext-starter
 
+## Projeto PIBRG
+
+Site público da Primeira Igreja Batista Renovada em Guadalupe. O conteúdo variável
+é administrado em `/acesso-interno`: a secretaria pode atualizar agenda, liderança
+e devocionais, enquanto a equipe de intercessão pode acompanhar pedidos de oração.
+O acesso é autenticado e autorizado no servidor.
+
+Os pedidos ficam criptografados no D1. A variável
+`PRAYER_NOTIFICATION_EMAIL` define o destinatário temporário das notificações por
+e-mail; as chaves reais de proteção permanecem apenas na hospedagem e nunca devem
+ser adicionadas ao GitHub.
+
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
 Drizzle support.

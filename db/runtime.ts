@@ -15,6 +15,7 @@ type RuntimeEnvironment = {
   SUPER_ADMIN_EMAIL?: string;
   PRAYER_ENCRYPTION_KEY?: string;
   IP_HASH_SALT?: string;
+  PRAYER_NOTIFICATION_EMAIL?: string;
 };
 
 export function getRuntimeEnvironment(): RuntimeEnvironment {
@@ -92,5 +93,13 @@ async function initializeDatabase() {
     db.prepare("CREATE INDEX IF NOT EXISTS content_items_kind_order_idx ON content_items(kind, sort_order)"),
     db.prepare("CREATE INDEX IF NOT EXISTS prayer_requests_status_date_idx ON prayer_requests(status, submitted_at)"),
     db.prepare("CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON audit_logs(created_at)"),
+    db.prepare(`DELETE FROM content_items WHERE
+      (title = 'Culto da Família' AND date = '2026-08-09') OR
+      (title = 'Encontro de Casais' AND date = '2026-08-16') OR
+      (title = 'Manhã para Servir' AND date = '2026-08-22') OR
+      (title = 'Culto de Batismo' AND date = '2026-08-30') OR
+      (title = 'Paz para o caminho de hoje' AND date = '2026-08-05') OR
+      (title = 'Quando esperar também é fé' AND date = '2026-07-29') OR
+      (title = 'Pequenos gestos, grande amor' AND date = '2026-07-22')`),
   ]);
 }

@@ -1,4 +1,4 @@
-import { contentKinds, getAllContent, getDefaultContent, type ContentKind } from "../../../../lib/site-content";
+import { contentKinds, getAllContent, type ContentKind } from "../../../../lib/site-content";
 import { ensureDatabase, getD1 } from "../../../../db/runtime";
 import { requireApiPermission, writeAudit } from "../../../../lib/internal-auth";
 
@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   if ("error" in auth) return auth.error;
   const kindValue = new URL(request.url).searchParams.get("kind");
   const kind = contentKinds.includes(kindValue as ContentKind) ? kindValue as ContentKind : undefined;
-  return Response.json({ items: await getAllContent(kind), defaults: getDefaultContent() }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ items: await getAllContent(kind) }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -17,21 +17,6 @@ export async function POST(request: Request) {
   const action = String(payload.action ?? "");
   const id = Number(payload.id);
   await ensureDatabase();
-
-  if (action === "seed") {
-    const existing = await getAllContent();
-    if (!existing.length) {
-      const db = getD1();
-      for (const item of getDefaultContent()) {
-        await db.prepare(`INSERT INTO content_items
-          (kind, title, subtitle, body, date, time, location, sort_order, active, updated_by)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-          .bind(item.kind, item.title, item.subtitle, item.body, item.date, item.time, item.location, item.sortOrder, item.active ? 1 : 0, auth.identity.email).run();
-      }
-      await writeAudit(auth.identity.email, "seed", "content");
-    }
-    return Response.json({ ok: true });
-  }
 
   if (action === "delete") {
     if (!Number.isInteger(id) || id < 1) return Response.json({ error: "Registro inválido." }, { status: 400 });

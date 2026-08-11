@@ -10,7 +10,7 @@ export default function Home() {
         <div className="container hero-inner">
           <p className="eyebrow eyebrow-light">Bem-vindo à Primeira Igreja Batista Renovada em Guadalupe</p>
           <h1 id="hero-title">Uma igreja para pertencer.<br />Uma fé para viver.</h1>
-          <p className="hero-copy">Uma comunidade cristã que acolhe pessoas, fortalece famílias e vive o evangelho com simplicidade, graça e propósito.</p>
+          <p className="hero-copy">Conheça a comunidade, acompanhe a programação publicada pela igreja e envie seu pedido de oração com privacidade.</p>
           <div className="hero-actions">
             <Link className="button button-gold" href="/nossa-igreja">Conheça nossa igreja</Link>
             <Link className="button button-ghost" href="/pedido-de-oracao">Pedido de oração</Link>
@@ -23,8 +23,8 @@ export default function Home() {
         <div className="container welcome-grid">
           <div><p className="eyebrow">Há lugar para você</p><h2>Uma comunidade de braços abertos e coração em missão.</h2></div>
           <div className="welcome-copy">
-            <p>Nossa igreja existe para conduzir pessoas a um relacionamento vivo com Jesus, formar discípulos e servir a cidade com amor prático.</p>
-            <blockquote>“Queremos que cada pessoa encontre pertencimento, cresça na fé e descubra seu propósito.”</blockquote>
+            <p>A PIBRG é uma comunidade cristã presente na região desde 1979. Este site reúne informações verificadas e conteúdos publicados pela própria equipe da igreja.</p>
+            <blockquote>Agenda, liderança e devocionais podem ser atualizados pela equipe autorizada.</blockquote>
             <Link className="text-link" href="/nossa-igreja">Nossa história <span>→</span></Link>
           </div>
         </div>
@@ -46,7 +46,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section events-preview" aria-labelledby="presenca-title"><div className="container welcome-grid"><div><p className="eyebrow">Desde 1979</p><h2 id="presenca-title">Uma história construída em Guadalupe.</h2></div><div className="welcome-copy"><p>Com registro institucional desde 1979, a PIBRG mantém sua presença no bairro de Guadalupe, no Rio de Janeiro, reunindo pessoas em torno da fé cristã, da Palavra e da comunhão.</p><blockquote>Primeira Igreja Batista Renovada em Guadalupe é um nome completo — uma identidade ligada à igreja e ao bairro onde ela serve.</blockquote><Link className="text-link" href="/nossa-igreja">Conheça nossa identidade <span>→</span></Link></div></div></section>
+      <section className="section events-preview" aria-labelledby="presenca-title"><div className="container welcome-grid"><div><p className="eyebrow">Desde 1979</p><h2 id="presenca-title">Uma história ligada a Guadalupe.</h2></div><div className="welcome-copy"><p>Com registro institucional desde 21 de fevereiro de 1979, a PIBRG permanece ativa no Rio de Janeiro e está situada na Rua Fernando Lobo, 226.</p><blockquote>Primeira Igreja Batista Renovada em Guadalupe é o nome institucional completo da comunidade.</blockquote><Link className="text-link" href="/nossa-igreja">Conheça nossa identidade <span>→</span></Link></div></div></section>
 
       <section className="verse-section" aria-label="Versículo do dia">
         <div className="container verse-inner"><span className="verse-mark" aria-hidden="true">“</span><p className="eyebrow eyebrow-light">Versículo do dia</p><blockquote>“Alegrem-se na esperança, sejam pacientes na tribulação, perseverem na oração.”</blockquote><cite>Romanos 12:12</cite></div>
@@ -59,7 +59,7 @@ export default function Home() {
         <div className="gallery-preview-image" role="img" aria-label="Pessoas da comunidade conversando em um encontro" />
       </section>
 
-      <section className="section visit-section"><div className="container visit-card"><div><p className="eyebrow eyebrow-light">Quer nos visitar?</p><h2>Você será bem-vindo.</h2><p>Confira a programação atual no Instagram oficial antes da visita.</p></div><div className="visit-actions"><a className="button button-light" href="https://www.instagram.com/pibrg/" target="_blank" rel="noreferrer">Ver programação</a><span>Rua Fernando Lobo, 226</span></div></div></section>
+      <section className="section visit-section"><div className="container visit-card"><div><p className="eyebrow eyebrow-light">Quer nos visitar?</p><h2>Consulte a programação.</h2><p>Veja a agenda publicada neste site e confirme os detalhes nos canais da PIBRG.</p></div><div className="visit-actions"><Link className="button button-light" href="/agenda">Ver agenda</Link><span>Rua Fernando Lobo, 226</span></div></div></section>
     </main>
   );
 }

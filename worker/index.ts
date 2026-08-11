@@ -8,6 +8,7 @@ interface Env {
   SUPER_ADMIN_EMAIL?: string;
   PRAYER_ENCRYPTION_KEY?: string;
   IP_HASH_SALT?: string;
+  PRAYER_NOTIFICATION_EMAIL?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {

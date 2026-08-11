@@ -110,14 +110,13 @@ function ContentManager() {
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, []);
-  async function seed() { await api("/api/internal/content", { method: "POST", body: JSON.stringify({ action: "seed" }) }); await load(); }
   async function remove(id: number) { if (!window.confirm("Remover este item do site?")) return; await api("/api/internal/content", { method: "POST", body: JSON.stringify({ action: "delete", id }) }); await load(); }
   const visible = items.filter((item) => item.kind === kind);
   return <div className="internal-stack">
     <div className="internal-toolbar"><div className="internal-filters">{(["event", "leader", "devotional"] as ContentKind[]).map((value) => <button type="button" className={kind === value ? "active" : ""} onClick={() => { setKind(value); setEditing(null); }} key={value}>{kindLabels[value]}</button>)}</div><button type="button" className="primary" onClick={() => setEditing(blankItem(kind))}>Adicionar item</button></div>
     {error && <Notice type="error">{error}</Notice>}
     {editing && <ContentForm item={editing} onCancel={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} />}
-    {loading ? <Empty>Carregando conteúdo…</Empty> : !items.length ? <section className="internal-empty-action"><h2>Importe o conteúdo atual</h2><p>Isso criará cópias editáveis da agenda, liderança e devocionais que já aparecem no site.</p><button type="button" className="primary" onClick={() => void seed()}>Preparar conteúdo</button></section> : !visible.length ? <Empty>Nenhum item nesta seção. Use “Adicionar item”.</Empty> : <div className="content-admin-list">{visible.map((item) => <article key={item.id} className={!item.active ? "inactive" : ""}><div><span>{item.active ? "Publicado" : "Oculto"}</span><h2>{item.title}</h2><p>{item.subtitle}{item.date ? ` • ${formatShortDate(item.date)}` : ""}</p></div><div><button type="button" onClick={() => setEditing(item)}>Editar</button><button type="button" className="danger" onClick={() => void remove(item.id)}>Excluir</button></div></article>)}</div>}
+    {loading ? <Empty>Carregando conteúdo…</Empty> : !visible.length ? <section className="internal-empty-action"><h2>Nenhum item cadastrado</h2><p>Use “Adicionar item” para publicar informações confirmadas pela igreja nesta seção.</p></section> : <div className="content-admin-list">{visible.map((item) => <article key={item.id} className={!item.active ? "inactive" : ""}><div><span>{item.active ? "Publicado" : "Oculto"}</span><h2>{item.title}</h2><p>{item.subtitle}{item.date ? ` • ${formatShortDate(item.date)}` : ""}</p></div><div><button type="button" onClick={() => setEditing(item)}>Editar</button><button type="button" className="danger" onClick={() => void remove(item.id)}>Excluir</button></div></article>)}</div>}
   </div>;
 }
 
@@ -172,5 +171,5 @@ async function api<T = { ok: boolean }>(url: string, init?: RequestInit): Promis
 function message(error: unknown) { return error instanceof Error ? error.message : "Ocorreu um erro inesperado."; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(value.endsWith("Z") ? value : `${value.replace(" ", "T")}Z`)); }
 function formatShortDate(value: string) { const [year, month, day] = value.split("-").map(Number); return new Intl.DateTimeFormat("pt-BR").format(new Date(year, month - 1, day)); }
-function actionLabel(action: string) { return ({ create: "Criou", update: "Atualizou", delete: "Excluiu", save: "Salvou", seed: "Preparou", status: "Alterou o status", view_list: "Consultou" } as Record<string, string>)[action] ?? action; }
+function actionLabel(action: string) { return ({ create: "Criou", update: "Atualizou", delete: "Excluiu", save: "Salvou", status: "Alterou o status", view_list: "Consultou" } as Record<string, string>)[action] ?? action; }
 function entityLabel(entity: string) { return ({ content: "conteúdo", prayer: "pedidos", admin_user: "acesso" } as Record<string, string>)[entity] ?? entity; }
