@@ -1,47 +1,47 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Nossa Igreja" };
+export const metadata: Metadata = { title: "Sobre" };
 
 export default function NossaIgrejaPage() {
   return <main>
     <section className="page-hero page-hero-church"><div className="container page-hero-inner">
-      <p className="eyebrow eyebrow-light">Nossa igreja</p>
-      <h1>Uma presença cristã<br />com raízes em Guadalupe.</h1>
-      <p>Conheça as informações institucionais confirmadas da Primeira Igreja Batista Renovada em Guadalupe.</p>
+      <p className="eyebrow eyebrow-light">Sobre a organização</p>
+      <h1>Uma presença institucional<br />construída com propósito.</h1>
+      <p>Use esta página para apresentar história, atuação, diferenciais e informações relevantes da sua organização.</p>
     </div></section>
 
     <section className="section story-section"><div className="container story-grid">
-      <div className="sticky-heading"><p className="eyebrow">Nossa história</p><h2>Presente na região desde 1979.</h2></div>
+      <div className="sticky-heading"><p className="eyebrow">Nossa história</p><h2>Uma trajetória que merece ser bem apresentada.</h2></div>
       <div className="story-copy">
-        <p className="lead">A Primeira Igreja Batista Renovada em Guadalupe foi registrada em 21 de fevereiro de 1979 e permanece ativa como organização religiosa no Rio de Janeiro.</p>
-        <p>Sua sede está localizada na Rua Fernando Lobo, 226, CEP 21665-070, na região de Guadalupe e Ricardo de Albuquerque.</p>
-        <p>As informações sobre liderança, ministérios, agenda e conteúdos da comunidade são mantidas pela equipe autorizada da própria igreja.</p>
-        <div className="timeline"><div><strong>1979</strong><span>Início do registro institucional</span></div><div><strong>PIBRG</strong><span>Identidade da comunidade</span></div><div><strong>Rio de Janeiro</strong><span>Rua Fernando Lobo, 226</span></div></div>
+        <p className="lead">A Nexa é uma organização fictícia criada para demonstrar como um site institucional pode apresentar uma história de forma clara e profissional.</p>
+        <p>Este conteúdo é apenas demonstrativo e pode ser substituído por informações reais de uma empresa, associação, projeto, ONG ou negócio local.</p>
+        <p>Equipe, agenda, conteúdos e outras informações podem ser mantidas pela área administrativa protegida do projeto.</p>
+        <div className="timeline"><div><strong>2019</strong><span>Início demonstrativo</span></div><div><strong>Nexa</strong><span>Identidade fictícia</span></div><div><strong>Rio de Janeiro</strong><span>Localização de exemplo</span></div></div>
       </div>
     </div></section>
 
     <section className="section identity-section"><div className="container">
-      <div className="section-heading centered-heading"><p className="eyebrow">Informações confirmadas</p><h2>Uma apresentação fiel à igreja.</h2></div>
+      <div className="section-heading centered-heading"><p className="eyebrow">Informações institucionais</p><h2>Apresente o que realmente importa.</h2></div>
       <div className="identity-grid">
-        <article><span>01</span><h3>Nome</h3><p>Primeira Igreja Batista Renovada em Guadalupe.</p></article>
-        <article><span>02</span><h3>Endereço</h3><p>Rua Fernando Lobo, 226, Rio de Janeiro – RJ.</p></article>
-        <article><span>03</span><h3>Comunidade</h3><p>Uma organização religiosa cristã com atuação local desde 1979.</p></article>
+        <article><span>01</span><h3>Propósito</h3><p>Explique de forma objetiva por que sua organização existe e qual problema busca resolver.</p></article>
+        <article><span>02</span><h3>Atuação</h3><p>Mostre serviços, projetos, segmentos atendidos e principais áreas de trabalho.</p></article>
+        <article><span>03</span><h3>Diferenciais</h3><p>Destaque experiência, processo, tecnologia, atendimento ou resultados relevantes.</p></article>
       </div>
     </div></section>
 
     <section className="section faith-section"><div className="container faith-grid">
-      <div><p className="eyebrow eyebrow-light">Vida da igreja</p><h2>Fé, comunhão<br />e oração.</h2><p>O site aproxima visitantes da comunidade e reúne informações publicadas pela equipe da PIBRG.</p></div>
+      <div><p className="eyebrow eyebrow-light">Estrutura do site</p><h2>Conteúdo, equipe<br />e relacionamento.</h2><p>O template organiza informações institucionais e permite que conteúdos variáveis sejam atualizados por usuários autorizados.</p></div>
       <div className="faith-list">{[
-        ["Cultos e encontros", "A agenda apresenta somente programações cadastradas pela igreja."],
-        ["Liderança", "Nomes e ministérios podem ser publicados pela equipe autorizada."],
-        ["Devocionais", "Reflexões podem ser incluídas e atualizadas no painel interno."],
-        ["Pedidos de oração", "As mensagens ficam protegidas e acessíveis apenas a pessoas autorizadas."],
+        ["Agenda e eventos", "Divulgue compromissos, atividades e programações em uma área dedicada."],
+        ["Equipe", "Apresente pessoas, funções e responsabilidades de forma organizada."],
+        ["Conteúdos", "Publique textos, novidades e materiais institucionais pelo painel interno."],
+        ["Contato", "Centralize canais de relacionamento e facilite o próximo passo de quem visita o site."],
       ].map(([title, text], index) => <article key={title}><span>0{index + 1}</span><div><h3>{title}</h3><p>{text}</p></div></article>)}</div>
     </div></section>
 
     <section className="section pastor-section"><div className="container pastor-card">
-      <div className="pastor-placeholder" role="img" aria-label="Identidade visual da PIBRG"><span>PIBRG<br />Guadalupe</span></div>
-      <div><p className="eyebrow">Visite a comunidade</p><h2>Conheça a PIBRG.</h2><p className="pastor-role">Rua Fernando Lobo, 226 • Rio de Janeiro – RJ</p><p>Confira a agenda deste site e os canais da igreja antes de sua visita para confirmar a programação atual.</p><a className="text-link" href="https://www.instagram.com/pibrg/" target="_blank" rel="noreferrer">Acompanhar a PIBRG no Instagram <span>↗</span></a></div>
+      <div className="pastor-placeholder" role="img" aria-label="Identidade visual demonstrativa"><span>NEXA<br />Institucional</span></div>
+      <div><p className="eyebrow">Projeto demonstrativo</p><h2>Uma base pronta para personalização.</h2><p className="pastor-role">Conteúdo fictício • Dados demonstrativos</p><p>O objetivo desta versão é mostrar a experiência visual e técnica sem expor informações do cliente que originou o projeto.</p><a className="text-link" href="/#contato">Entrar em contato <span>→</span></a></div>
     </div></section>
   </main>;
 }
