@@ -12,8 +12,8 @@ export default function Home() {
           <h1 id="hero-title">Sua organização apresentada<br />com clareza e presença digital.</h1>
           <p className="hero-copy">Um site institucional moderno para apresentar serviços, equipe, agenda, projetos, conteúdos e canais de contato.</p>
           <div className="hero-actions">
-            <Link className="button button-gold" href="/nossa-igreja">Conheça a organização</Link>
-            <Link className="button button-ghost" href="/#contato">Fale conosco</Link>
+            <Link className="button button-gold" href="/sobre">Conheça a organização</Link>
+            <Link className="button button-ghost" href="/contato">Fale conosco</Link>
           </div>
         </div>
         <a className="hero-scroll" href="#boas-vindas" aria-label="Ir para a próxima seção"><span /></a>
@@ -25,7 +25,7 @@ export default function Home() {
           <div className="welcome-copy">
             <p>Esta demonstração apresenta uma organização fictícia para mostrar como informações institucionais podem ser organizadas em um site profissional, responsivo e fácil de atualizar.</p>
             <blockquote>Agenda, equipe e publicações podem ser atualizadas pela área administrativa protegida.</blockquote>
-            <Link className="text-link" href="/nossa-igreja">Conheça a estrutura <span>→</span></Link>
+            <Link className="text-link" href="/sobre">Conheça a estrutura <span>→</span></Link>
           </div>
         </div>
       </section>
@@ -46,13 +46,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section events-preview" aria-labelledby="historia-title"><div className="container welcome-grid"><div><p className="eyebrow">Sobre a organização</p><h2 id="historia-title">Conte sua história e mostre o que torna seu trabalho diferente.</h2></div><div className="welcome-copy"><p>Use esta seção para apresentar trajetória, propósito, atuação e informações importantes para clientes, parceiros ou comunidade.</p><blockquote>Todo o conteúdo desta versão é fictício e serve apenas como demonstração de portfólio.</blockquote><Link className="text-link" href="/nossa-igreja">Ver página institucional <span>→</span></Link></div></div></section>
+      <section className="section events-preview" aria-labelledby="historia-title"><div className="container welcome-grid"><div><p className="eyebrow">Sobre a organização</p><h2 id="historia-title">Conte sua história e mostre o que torna seu trabalho diferente.</h2></div><div className="welcome-copy"><p>Use esta seção para apresentar trajetória, propósito, atuação e informações importantes para clientes, parceiros ou comunidade.</p><blockquote>Todo o conteúdo desta versão é fictício e serve apenas como demonstração de portfólio.</blockquote><Link className="text-link" href="/sobre">Ver página institucional <span>→</span></Link></div></div></section>
 
       <section className="verse-section" aria-label="Mensagem institucional">
         <div className="container verse-inner"><span className="verse-mark" aria-hidden="true">“</span><p className="eyebrow eyebrow-light">Posicionamento</p><blockquote>“Tecnologia simples de usar, conteúdo bem organizado e uma experiência que aproxima pessoas da sua organização.”</blockquote><cite>Nexa Institucional</cite></div>
       </section>
 
-      <section className="section" aria-labelledby="visite-title"><div className="container"><div className="section-heading split-heading align-end"><div><p className="eyebrow">Estrutura completa</p><h2 id="visite-title">Informação organizada em um só lugar.</h2></div><Link className="text-link" href="/agenda">Explorar agenda <span>→</span></Link></div><div className="news-grid"><article className="news-card news-featured"><div className="news-image community-image" role="img" aria-label="Equipe trabalhando em conjunto" /><div className="news-content"><span>Institucional</span><h3>Apresente sua organização</h3><p>História, propósito, serviços, equipe e informações importantes.</p></div></article><article className="news-card news-compact"><div className="news-number">01</div><span>Atualizações</span><h3>Conteúdo gerenciável</h3><p>Agenda e publicações podem ser mantidas por usuários autorizados.</p><Link className="text-link" href="/agenda">Ver agenda <span>→</span></Link></article><article className="news-card news-compact dark-card"><div className="news-number">02</div><span>Relacionamento</span><h3>Facilite o contato.</h3><p>Centralize informações e canais para clientes, parceiros e comunidade.</p><Link className="text-link" href="/#contato">Fale conosco <span>→</span></Link></article></div></div></section>
+      <section className="section" aria-labelledby="visite-title"><div className="container"><div className="section-heading split-heading align-end"><div><p className="eyebrow">Estrutura completa</p><h2 id="visite-title">Informação organizada em um só lugar.</h2></div><Link className="text-link" href="/agenda">Explorar agenda <span>→</span></Link></div><div className="news-grid"><article className="news-card news-featured"><div className="news-image community-image" role="img" aria-label="Equipe trabalhando em conjunto" /><div className="news-content"><span>Institucional</span><h3>Apresente sua organização</h3><p>História, propósito, serviços, equipe e informações importantes.</p></div></article><article className="news-card news-compact"><div className="news-number">01</div><span>Atualizações</span><h3>Conteúdo gerenciável</h3><p>Agenda e publicações podem ser mantidas por usuários autorizados.</p><Link className="text-link" href="/agenda">Ver agenda <span>→</span></Link></article><article className="news-card news-compact dark-card"><div className="news-number">02</div><span>Relacionamento</span><h3>Facilite o contato.</h3><p>Centralize informações e canais para clientes, parceiros e comunidade.</p><Link className="text-link" href="/contato">Fale conosco <span>→</span></Link></article></div></div></section>
 
       <section className="gallery-preview" aria-labelledby="galeria-title">
         <div className="gallery-preview-copy"><p className="eyebrow eyebrow-light">Galeria</p><h2 id="galeria-title">Mostre projetos, eventos e momentos importantes.</h2><p>Uma área visual para reforçar identidade, atuação e resultados.</p><Link className="button button-gold" href="/galeria">Ver galeria</Link></div>
