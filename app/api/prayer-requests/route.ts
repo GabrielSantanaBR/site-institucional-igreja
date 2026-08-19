@@ -2,7 +2,8 @@ import { ensureDatabase, getD1 } from "../../../db/runtime";
 import { encryptPrayer, hashIp } from "../../../lib/prayer-security";
 import { notifyPrayerByEmail } from "../../../lib/prayer-notification";
 
-const allowedSubjects = ["Família", "Saúde", "Trabalho e estudos", "Vida espiritual", "Outro"];
+// Endpoint e helpers mantêm nomes legados por compatibilidade com o schema original.
+const allowedSubjects = ["Orçamento", "Parceria", "Suporte", "Informações", "Outro"];
 
 export async function POST(request: Request) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
     const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
     const ipHash = await hashIp(ip);
     if (!(await allowSubmission(ipHash))) {
-      return Response.json({ error: "Muitos pedidos foram enviados deste dispositivo. Tente novamente mais tarde." }, { status: 429 });
+      return Response.json({ error: "Muitas mensagens foram enviadas deste dispositivo. Tente novamente mais tarde." }, { status: 429 });
     }
 
     const encrypted = await encryptPrayer({ name: name || "Anônimo", contact, message });
@@ -45,8 +46,8 @@ export async function POST(request: Request) {
 
     return Response.json({ ok: true, emailNotified }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("prayer submission failed", error instanceof Error ? error.message : "unknown error");
-    return Response.json({ error: "Não foi possível registrar o pedido agora. Tente novamente em alguns minutos." }, { status: 500 });
+    console.error("contact submission failed", error instanceof Error ? error.message : "unknown error");
+    return Response.json({ error: "Não foi possível registrar a mensagem agora. Tente novamente em alguns minutos." }, { status: 500 });
   }
 }
 
