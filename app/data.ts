@@ -1,5 +1,5 @@
 export const services = [
-  { icon: "✦", day: "Celebração", title: "Cultos e louvor", time: "Participe", note: "Consulte a agenda publicada pela igreja" },
-  { icon: "◒", day: "Comunhão", title: "Oração e cuidado", time: "Caminhe conosco", note: "Um espaço de fé, escuta e acolhimento" },
-  { icon: "✧", day: "Crescimento", title: "Palavra e vida cristã", time: "Aprenda", note: "Encontros e conteúdos divulgados pela PIBRG" },
+  { icon: "✦", day: "Estratégia", title: "Projetos e soluções", time: "Conheça", note: "Apresente os principais serviços e diferenciais da organização" },
+  { icon: "◒", day: "Relacionamento", title: "Atendimento e suporte", time: "Converse", note: "Centralize canais de contato, suporte e relacionamento" },
+  { icon: "✧", day: "Conteúdo", title: "Agenda e publicações", time: "Acompanhe", note: "Divulgue eventos, novidades e conteúdos atualizados pela equipe" },
 ];
