@@ -1,17 +1,16 @@
-import { ensureDatabase, getD1 } from "../../../db/runtime";
+import { ensureDatabase, getD1, scheduleBackground } from "../../../db/runtime";
 import { encryptPrayer, hashIp } from "../../../lib/prayer-security";
 import { notifyPrayerByEmail } from "../../../lib/prayer-notification";
+import { rejectCrossSiteMutation, readJsonObject } from "../../../lib/request-security";
 
 const allowedSubjects = ["Família", "Saúde", "Trabalho e estudos", "Vida espiritual", "Outro"];
 
 export async function POST(request: Request) {
   try {
-    const origin = request.headers.get("origin");
-    if (origin && origin !== new URL(request.url).origin) {
-      return Response.json({ error: "Origem da solicitação inválida." }, { status: 403 });
-    }
-
-    const payload = await request.json() as Record<string, unknown>;
+    const rejected = rejectCrossSiteMutation(request);
+    if (rejected) return rejected;
+    const payload = await readJsonObject(request);
+    if (!payload) return Response.json({ error: "Dados inválidos ou muito extensos." }, { status: 400 });
     if (String(payload.website ?? "").trim()) return Response.json({ ok: true }, { status: 201 });
 
     const name = clean(payload.name, 100);
@@ -36,14 +35,16 @@ export async function POST(request: Request) {
       "INSERT INTO prayer_requests (encrypted_payload, subject, source_ip_hash) VALUES (?, ?, ?)"
     ).bind(encrypted, subject, ipHash).run();
 
-    const emailNotified = await notifyPrayerByEmail({
+    const notification = notifyPrayerByEmail({
       name: name || "Anônimo",
       contact,
       subject,
       message,
     });
+    const notificationQueued = scheduleBackground(notification);
+    const emailNotified = notificationQueued ? true : await notification;
 
-    return Response.json({ ok: true, emailNotified }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    return Response.json({ ok: true, emailNotified, notificationQueued }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("prayer submission failed", error instanceof Error ? error.message : "unknown error");
     return Response.json({ error: "Não foi possível registrar o pedido agora. Tente novamente em alguns minutos." }, { status: 500 });

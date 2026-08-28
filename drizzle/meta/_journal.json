@@ -8,6 +8,34 @@
       "when": 1785996301027,
       "tag": "0000_bitter_loa",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787281060304,
+      "tag": "0001_amazing_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787281416987,
+      "tag": "0002_true_dexter_bennett",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787521667753,
+      "tag": "0003_tan_lake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787523603306,
+      "tag": "0004_harsh_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }

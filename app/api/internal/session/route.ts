@@ -8,6 +8,7 @@ export async function GET() {
     permissions: {
       content: can(identity, "content"),
       prayers: can(identity, "prayers"),
+      contacts: can(identity, "contacts"),
       users: can(identity, "users"),
       audit: can(identity, "audit"),
     },

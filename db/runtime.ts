@@ -1,27 +1,79 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 export interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   first<T>(): Promise<T | null>;
   all<T>(): Promise<{ results: T[] }>;
-  run(): Promise<unknown>;
+  run<T = unknown>(): Promise<D1Result<T>>;
+}
+
+export interface D1Result<T = unknown> {
+  success: true;
+  results: T[];
+  meta: {
+    changes: number;
+    last_row_id: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface D1Database {
   prepare(query: string): D1PreparedStatement;
-  batch(statements: D1PreparedStatement[]): Promise<unknown[]>;
+  batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
 }
 
-type RuntimeEnvironment = {
+export interface R2ObjectBody {
+  body: ReadableStream;
+  httpMetadata?: { contentType?: string };
+  etag?: string;
+}
+
+export interface R2Bucket {
+  put(key: string, value: ArrayBuffer | ReadableStream, options?: { httpMetadata?: { contentType?: string; cacheControl?: string }; customMetadata?: Record<string, string> }): Promise<unknown>;
+  get(key: string): Promise<R2ObjectBody | null>;
+  delete(key: string): Promise<void>;
+}
+
+export type RuntimeEnvironment = {
   DB?: D1Database;
+  BUCKET?: R2Bucket;
   SUPER_ADMIN_EMAIL?: string;
   PRAYER_ENCRYPTION_KEY?: string;
   IP_HASH_SALT?: string;
   PRAYER_NOTIFICATION_EMAIL?: string;
+  CONTACT_NOTIFICATION_EMAIL?: string;
   BREVO_API_KEY?: string;
   BREVO_SENDER_EMAIL?: string;
+  ADMIN_USERNAME?: string;
+  ADMIN_PASSWORD?: string;
+  ADMIN_SESSION_SECRET?: string;
 };
 
+type RuntimeExecutionContext = {
+  waitUntil(promise: Promise<unknown>): void;
+};
+
+type RuntimeScope = {
+  environment: RuntimeEnvironment;
+  executionContext: RuntimeExecutionContext;
+};
+
+const runtimeGlobal = globalThis as typeof globalThis & { __PIBRG_RUNTIME_SCOPE__?: AsyncLocalStorage<RuntimeScope> };
+const runtimeScope = (runtimeGlobal.__PIBRG_RUNTIME_SCOPE__ ??= new AsyncLocalStorage<RuntimeScope>());
+
+export function runWithRuntimeScope<T>(environment: RuntimeEnvironment, executionContext: RuntimeExecutionContext, callback: () => T): T {
+  return runtimeScope.run({ environment, executionContext }, callback);
+}
+
 export function getRuntimeEnvironment(): RuntimeEnvironment {
-  return (globalThis as typeof globalThis & { __PIBRG_ENV__?: RuntimeEnvironment }).__PIBRG_ENV__ ?? {};
+  return runtimeScope.getStore()?.environment ?? {};
+}
+
+export function scheduleBackground(promise: Promise<unknown>) {
+  const executionContext = runtimeScope.getStore()?.executionContext;
+  if (!executionContext) return false;
+  executionContext.waitUntil(promise);
+  return true;
 }
 
 export function getD1(): D1Database {
@@ -30,78 +82,10 @@ export function getD1(): D1Database {
   return database;
 }
 
-let schemaReady: Promise<void> | null = null;
-
 export function ensureDatabase(): Promise<void> {
-  schemaReady ??= initializeDatabase().catch((error) => {
-    schemaReady = null;
-    throw error;
-  });
-  return schemaReady;
-}
-
-async function initializeDatabase() {
-  const db = getD1();
-  await db.batch([
-    db.prepare(`CREATE TABLE IF NOT EXISTS admin_users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL DEFAULT '',
-      role TEXT NOT NULL,
-      active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_by TEXT NOT NULL,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS content_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      kind TEXT NOT NULL,
-      title TEXT NOT NULL,
-      subtitle TEXT NOT NULL DEFAULT '',
-      body TEXT NOT NULL DEFAULT '',
-      date TEXT NOT NULL DEFAULT '',
-      time TEXT NOT NULL DEFAULT '',
-      location TEXT NOT NULL DEFAULT '',
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_by TEXT NOT NULL
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS prayer_requests (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      encrypted_payload TEXT NOT NULL,
-      subject TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'new',
-      source_ip_hash TEXT NOT NULL,
-      submitted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_by TEXT
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS audit_logs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      actor_email TEXT NOT NULL,
-      action TEXT NOT NULL,
-      entity_type TEXT NOT NULL,
-      entity_id TEXT NOT NULL DEFAULT '',
-      metadata TEXT NOT NULL DEFAULT '{}',
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS submission_limits (
-      ip_hash TEXT PRIMARY KEY,
-      window_started_at INTEGER NOT NULL,
-      submission_count INTEGER NOT NULL DEFAULT 0
-    )`),
-    db.prepare("CREATE INDEX IF NOT EXISTS content_items_kind_order_idx ON content_items(kind, sort_order)"),
-    db.prepare("CREATE INDEX IF NOT EXISTS prayer_requests_status_date_idx ON prayer_requests(status, submitted_at)"),
-    db.prepare("CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON audit_logs(created_at)"),
-    db.prepare(`DELETE FROM content_items WHERE
-      (title = 'Culto da Família' AND date = '2026-08-09') OR
-      (title = 'Encontro de Casais' AND date = '2026-08-16') OR
-      (title = 'Manhã para Servir' AND date = '2026-08-22') OR
-      (title = 'Culto de Batismo' AND date = '2026-08-30') OR
-      (title = 'Paz para o caminho de hoje' AND date = '2026-08-05') OR
-      (title = 'Quando esperar também é fé' AND date = '2026-07-29') OR
-      (title = 'Pequenos gestos, grande amor' AND date = '2026-07-22')`),
-  ]);
+  // O esquema é aplicado pelas migrações versionadas durante a publicação.
+  // Aqui apenas validamos o binding, evitando dezenas de comandos DDL em cada
+  // novo processo do Worker e reduzindo a latência das páginas e do painel.
+  getD1();
+  return Promise.resolve();
 }
