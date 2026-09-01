@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ADMIN_COOKIE_NAME } from "../../../../lib/admin-session";
+import { rejectCrossSiteMutation } from "../../../../lib/request-security";
 
 function signOut(request: Request) {
   const response = NextResponse.redirect(new URL("/alteracao-de-dados", request.url), 303);
@@ -8,5 +9,15 @@ function signOut(request: Request) {
   return response;
 }
 
-export async function GET(request: Request) { return signOut(request); }
-export async function POST(request: Request) { return signOut(request); }
+export async function POST(request: Request) {
+  const rejected = rejectCrossSiteMutation(request);
+  if (rejected) return rejected;
+  return signOut(request);
+}
+
+export async function GET() {
+  return Response.json({ error: "Método não permitido." }, {
+    status: 405,
+    headers: { "Allow": "POST", "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow, noarchive" },
+  });
+}

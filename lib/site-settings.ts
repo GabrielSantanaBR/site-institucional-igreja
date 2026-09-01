@@ -20,9 +20,17 @@ export type SiteSettingKey = keyof SiteSettings;
 export const siteSettingKeys = Object.keys(siteSettingsDefaults) as SiteSettingKey[];
 
 export async function getSiteSettings(): Promise<SiteSettings> {
+  return (await getSiteSettingsSnapshot()).settings;
+}
+
+export type SiteSettingsSnapshot = { settings: SiteSettings; revision: string };
+
+export async function getSiteSettingsSnapshot(): Promise<SiteSettingsSnapshot> {
   try {
     await ensureDatabase();
-    const { results } = await getD1().prepare("SELECT key, value FROM site_settings").all<{ key: string; value: string }>();
+    const { results } = await getD1().prepare(
+      "SELECT key, value, updated_at AS updatedAt FROM site_settings ORDER BY key"
+    ).all<{ key: string; value: string; updatedAt: string }>();
     const settings = { ...siteSettingsDefaults };
     for (const row of results) {
       if (siteSettingKeys.includes(row.key as SiteSettingKey)) {
@@ -30,14 +38,20 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         settings[key] = key === "instagramUrl" || key === "facebookUrl" ? safePublicUrl(row.value, siteSettingsDefaults[key]) : row.value;
       }
     }
-    return settings;
+    return { settings, revision: await settingsRevision(results) };
   } catch (error) {
     console.error(JSON.stringify({
       event: "site_settings_read_failed",
       error: error instanceof Error ? error.message : String(error),
     }));
-    return { ...siteSettingsDefaults };
+    return { settings: { ...siteSettingsDefaults }, revision: "defaults" };
   }
+}
+
+async function settingsRevision(rows: { key: string; value: string; updatedAt: string }[]) {
+  const source = rows.map((row) => `${row.key}\u0000${row.value}\u0000${row.updatedAt}`).join("\n") || "defaults";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+  return Array.from(new Uint8Array(digest).slice(0, 12), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function safePublicUrl(value: string, fallback = "") {

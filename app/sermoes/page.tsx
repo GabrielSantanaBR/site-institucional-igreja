@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 /* eslint-disable @next/next/no-img-element -- mídia publicada pelo painel já é otimizada no envio */
 import { getPublicContent } from "../../lib/site-content";
-export const metadata: Metadata = { title: "Sermões" };
+export const metadata: Metadata = {
+  title: "Sermões",
+  description: "Acompanhe sermões, mensagens e reflexões publicados pela Primeira Igreja Batista Renovada em Guadalupe.",
+  alternates: { canonical: "/sermoes" },
+};
 export const dynamic = "force-dynamic";
 export default async function SermoesPage() { const sermons = await getPublicContent("sermon"); return <main><section className="page-hero sermon-hero"><div className="sermon-hero-image" aria-hidden="true" /><div className="container page-hero-inner"><p className="eyebrow eyebrow-light">Palavra</p><h1>Mensagens e<br />registros da igreja.</h1><p>Acompanhe sermões e reflexões publicados pela Primeira Igreja Batista Renovada em Guadalupe.</p></div></section><section className="section"><div className="container"><div className="section-heading split-heading"><div><p className="eyebrow">Cultos e mensagens</p><h2>Uma Palavra para cada caminhada.</h2></div><p>Os conteúdos abaixo são organizados e publicados pela equipe da PIBRG.</p></div>{sermons.length ? <div className="sermons-public-grid">{sermons.map((sermon) => <article key={sermon.id}>{sermon.imageUrl ? <img src={sermon.imageUrl} alt={`Imagem do sermão ${sermon.title}`} style={{ objectPosition: sermon.imagePosition }} loading="lazy" /> : <div className="sermon-public-placeholder" aria-hidden="true">PIBRG</div>}<div><span>{formatPublicDate(sermon.date)}{sermon.subtitle ? ` • ${sermon.subtitle}` : ""}</span><h2>{sermon.title}</h2>{sermon.author && <strong>{sermon.author}</strong>}<p>{sermon.body}</p>{sermon.linkUrl && <a className="text-link" href={sermon.linkUrl} target="_blank" rel="noreferrer">Assistir ou ouvir <span>↗</span></a>}</div></article>)}</div> : <div className="public-empty"><strong>Os primeiros sermões serão publicados em breve.</strong><p>Enquanto isso, acompanhe as mensagens recentes no perfil oficial da igreja.</p><a className="text-link" href="https://www.instagram.com/pibrg/" target="_blank" rel="noreferrer">Abrir Instagram <span>↗</span></a></div>}</div></section></main>; }
 function formatPublicDate(value: string) { if (!value) return "Mensagem"; const [year, month, day] = value.split("-").map(Number); return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(year, month - 1, day)); }

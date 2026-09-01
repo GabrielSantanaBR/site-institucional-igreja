@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Nossa Igreja" };
+export const metadata: Metadata = {
+  title: "Nossa Igreja",
+  description: "Conheça a história, o endereço e a identidade da Primeira Igreja Batista Renovada em Guadalupe.",
+  alternates: { canonical: "/nossa-igreja" },
+};
 
 export default function NossaIgrejaPage() {
   return <main>

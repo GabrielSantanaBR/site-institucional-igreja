@@ -136,3 +136,61 @@ test("provides resilient editing states and navigable gallery previews", async (
   assert.match(loading, /Preparando a área administrativa/);
   assert.match(error, /Nenhuma alteração foi perdida/);
 });
+
+test("publishes a crawlable public map without exposing internal routes", async () => {
+  const [layout, robots, sitemap, llms, manifest] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/robots.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/sitemap.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/llms.txt/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/manifest.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(layout, /"@type": "Church"/);
+  assert.match(layout, /"@type": "WebSite"/);
+  assert.match(robots, /sitemap\.xml/);
+  assert.match(robots, /"\/alteracao-de-dados"/);
+  assert.match(robots, /Googlebot/);
+  assert.match(robots, /GPTBot/);
+  assert.match(sitemap, /"\/agenda"/);
+  assert.doesNotMatch(sitemap, /alteracao-de-dados/);
+  assert.match(llms, /Páginas públicas/);
+  assert.match(manifest, /short_name: "PIBRG"/);
+});
+
+test("keeps the legacy internal alias hidden and logout protected by POST", async () => {
+  const [legacyRoute, logout, dashboard] = await Promise.all([
+    readFile(new URL("../app/acesso-interno/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/internal/logout/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/InternalDashboard.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(legacyRoute, /notFound\(\)/);
+  assert.doesNotMatch(legacyRoute, /redirect\(/);
+  assert.match(logout, /export async function POST/);
+  assert.match(logout, /rejectCrossSiteMutation/);
+  assert.match(logout, /export async function GET/);
+  assert.match(logout, /status: 405/);
+  assert.match(dashboard, /<form action=\{signOutPath\} method="post">/);
+});
+
+test("prevents stale settings saves and supports safer access management", async () => {
+  const [settings, dashboard, config] = await Promise.all([
+    readFile(new URL("../app/api/internal/settings/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/InternalDashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../next.config.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(settings, /receivedRevision/);
+  assert.match(settings, /status: 409/);
+  assert.match(settings, /getSiteSettingsSnapshot/);
+  assert.match(dashboard, /Salvar acesso/);
+  assert.match(dashboard, /Acesso desativado/);
+  assert.match(config, /Cross-Origin-Resource-Policy/);
+  assert.match(config, /frame-src 'none'/);
+});
+
+test("keeps local image fallback safe when optional Worker bindings are absent", async () => {
+  const worker = await readFile(new URL("../worker/index.ts", import.meta.url), "utf8");
+  assert.match(worker, /env\.ASSETS \? env\.ASSETS\.fetch/);
+  assert.match(worker, /if \(!env\.IMAGES\)/);
+  assert.match(worker, /source\.startsWith\("\/"\)/);
+  assert.match(worker, /source\.startsWith\("\/\/"\)/);
+});

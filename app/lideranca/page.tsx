@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 /* eslint-disable @next/next/no-img-element -- mídia publicada pelo painel já é otimizada no envio */
 import { getContentGroups, getPublicContent, type ContentGroup, type ContentItem } from "../../lib/site-content";
 
-export const metadata: Metadata = { title: "Liderança" };
+export const metadata: Metadata = {
+  title: "Liderança",
+  description: "Conheça a liderança, os ministérios e as áreas de cuidado da PIBRG em Guadalupe.",
+  alternates: { canonical: "/lideranca" },
+};
 export const dynamic = "force-dynamic";
 
 export default async function LiderancaPage() {

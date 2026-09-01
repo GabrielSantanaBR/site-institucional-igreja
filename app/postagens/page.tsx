@@ -3,7 +3,11 @@ import type { Metadata } from "next";
 import { getPublicContent } from "../../lib/site-content";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Postagens" };
+export const metadata: Metadata = {
+  title: "Postagens",
+  description: "Veja notícias, avisos e atualizações publicados pela equipe da Primeira Igreja Batista Renovada em Guadalupe.",
+  alternates: { canonical: "/postagens" },
+};
 
 export default async function PostagensPage() {
   const posts = await getPublicContent("post");

@@ -40,7 +40,7 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
     <aside className="internal-sidebar">
       <div className="internal-brand"><span>PIBRG</span><strong>Gestão interna</strong></div>
       <nav aria-label="Seções da gestão">{tabs.map(([key, label]) => <button type="button" className={active === key ? "active" : ""} onClick={() => setActive(key)} key={key}>{label}</button>)}</nav>
-      <div className="internal-profile"><span>{identity.name}</span><small>{roleLabels[identity.role]}</small><a href={signOutPath}>Sair com segurança</a></div>
+      <div className="internal-profile"><span>{identity.name}</span><small>{roleLabels[identity.role]}</small><form action={signOutPath} method="post"><button type="submit">Sair com segurança</button></form></div>
     </aside>
     <section className="internal-main">
       <header className="internal-topbar"><div><p>Área protegida</p><h1>{tabs.find(([key]) => key === active)?.[1]}</h1></div><a href="/" target="_blank" rel="noreferrer">Visualizar site ↗</a></header>
@@ -75,14 +75,15 @@ function SettingsManager() {
   const submitting = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [revision, setRevision] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
-    api<{ settings: SiteSettings }>("/api/internal/settings")
-      .then((data) => setSettings(data.settings))
+    api<{ settings: SiteSettings; revision: string }>("/api/internal/settings")
+      .then((data) => { setSettings(data.settings); setRevision(data.revision); })
       .catch((reason) => setError(message(reason)))
       .finally(() => setLoading(false));
   }, []);
@@ -104,7 +105,10 @@ function SettingsManager() {
     if (submitting.current) return;
     submitting.current = true; setSaving(true); setError(""); setSaved(false);
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
-    try { await api("/api/internal/settings", { method: "POST", body: JSON.stringify(payload) }); setDirty(false); setSaved(true); }
+    try {
+      const result = await api<{ ok: true; revision: string }>("/api/internal/settings", { method: "POST", body: JSON.stringify({ ...payload, revision }) });
+      setRevision(result.revision); setDirty(false); setSaved(true);
+    }
     catch (reason) { setError(message(reason)); }
     finally { submitting.current = false; setSaving(false); }
   }
@@ -457,7 +461,7 @@ function AdminAgendaBoard({ events, initialDate, onAdd, onEdit }: { events: Cont
 
 function UserManager() {
   const submitting = useRef(false);
-  const [users, setUsers] = useState<AdminUser[]>([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [busyEmail, setBusyEmail] = useState(""); const [error, setError] = useState("");
+  const [users, setUsers] = useState<AdminUser[]>([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [busyEmail, setBusyEmail] = useState(""); const [error, setError] = useState(""); const [editing, setEditing] = useState<AdminUser | null>(null);
   const load = useCallback(async () => { setLoading(true); try { const data = await api<{ users: AdminUser[]; owner: AdminUser }>("/api/internal/users"); setUsers([data.owner, ...data.users]); setError(""); } catch (reason) { setError(message(reason)); } finally { setLoading(false); } }, []);
   useEffect(() => {
     let current = true;
@@ -467,11 +471,11 @@ function UserManager() {
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, []);
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (submitting.current) return; submitting.current = true; setSaving(true); setError(""); const form = event.currentTarget; const data = new FormData(form); try { await api("/api/internal/users", { method: "POST", body: JSON.stringify({ action: "save", email: data.get("email"), name: data.get("name"), role: data.get("role"), active: true }) }); form.reset(); await load(); } catch (reason) { setError(message(reason)); } finally { submitting.current = false; setSaving(false); } }
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (submitting.current) return; submitting.current = true; setSaving(true); setError(""); const form = event.currentTarget; const data = new FormData(form); try { await api("/api/internal/users", { method: "POST", body: JSON.stringify({ action: "save", email: data.get("email"), name: data.get("name"), role: data.get("role"), active: data.get("active") === "on" }) }); form.reset(); setEditing(null); await load(); } catch (reason) { setError(message(reason)); } finally { submitting.current = false; setSaving(false); } }
   async function remove(email: string) { if (!window.confirm(`Remover o acesso de ${email}?`)) return; setBusyEmail(email); setError(""); try { await api("/api/internal/users", { method: "POST", body: JSON.stringify({ action: "delete", email }) }); setUsers((current) => current.filter((user) => user.email !== email)); } catch (reason) { setError(message(reason)); } finally { setBusyEmail(""); } }
   return <div className="internal-stack"><section className="role-explainer"><article><strong>Administrador</strong><p>Conteúdo, Fale Conosco, orações e histórico.</p></article><article><strong>Secretaria</strong><p>Conteúdo do site e atendimento do Fale Conosco.</p></article><article><strong>Intercessão</strong><p>Somente pedidos de oração.</p></article></section>
-    <form className="user-form" onSubmit={submit}><label>Nome<input name="name" minLength={2} maxLength={120} required /></label><label>E-mail usado no ChatGPT<input name="email" type="email" maxLength={254} required /></label><label>Nível<select name="role"><option value="secretary">Secretaria</option><option value="intercessor">Intercessão</option><option value="admin">Administrador</option></select></label><button type="submit" className="primary" disabled={saving}>{saving ? "Salvando…" : "Cadastrar acesso"}</button></form>
-    {error && <Notice type="error">{error}</Notice>}{loading ? <Empty>Carregando acessos…</Empty> : <div className="user-list">{users.map((user) => <article key={user.email}><div className="user-avatar">{(user.name || user.email).slice(0, 2).toUpperCase()}</div><div><strong>{user.name || user.email}</strong><span>{user.email}</span></div><em>{roleLabels[user.role]}</em>{!user.protected && <button type="button" className="danger" disabled={busyEmail === user.email} onClick={() => void remove(user.email)}>{busyEmail === user.email ? "Removendo…" : "Remover"}</button>}</article>)}</div>}
+    <form key={editing?.email || "new"} className="user-form" onSubmit={submit}><label>Nome<input name="name" minLength={2} maxLength={120} defaultValue={editing?.name || ""} required /></label><label>E-mail usado no ChatGPT<input name="email" type="email" maxLength={254} defaultValue={editing?.email || ""} readOnly={Boolean(editing)} required /></label><label>Nível<select name="role" defaultValue={editing?.role || "secretary"}><option value="secretary">Secretaria</option><option value="intercessor">Intercessão</option><option value="admin">Administrador</option></select></label><label className="user-active"><input name="active" type="checkbox" defaultChecked={editing ? editing.active : true} /> Acesso ativo</label><div className="user-form-actions"><button type="submit" className="primary" disabled={saving}>{saving ? "Salvando…" : editing ? "Salvar acesso" : "Cadastrar acesso"}</button>{editing && <button type="button" onClick={() => setEditing(null)}>Cancelar</button>}</div></form>
+    {error && <Notice type="error">{error}</Notice>}{loading ? <Empty>Carregando acessos…</Empty> : <div className="user-list">{users.map((user) => <article key={user.email}><div className="user-avatar">{(user.name || user.email).slice(0, 2).toUpperCase()}</div><div><strong>{user.name || user.email}</strong><span>{user.email}</span></div><em>{user.active ? roleLabels[user.role] : "Acesso desativado"}</em>{!user.protected && <div className="user-row-actions"><button type="button" onClick={() => setEditing(user)}>Editar</button><button type="button" className="danger" disabled={busyEmail === user.email} onClick={() => void remove(user.email)}>{busyEmail === user.email ? "Removendo…" : "Remover"}</button></div>}</article>)}</div>}
   </div>;
 }
 

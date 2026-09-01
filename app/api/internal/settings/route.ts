@@ -1,13 +1,13 @@
 import { ensureDatabase, getD1 } from "../../../../db/runtime";
 import { requireApiPermission } from "../../../../lib/internal-auth";
-import { getSiteSettings, safePublicUrl, siteSettingKeys, siteSettingsDefaults, type SiteSettingKey } from "../../../../lib/site-settings";
+import { getSiteSettingsSnapshot, safePublicUrl, siteSettingKeys, siteSettingsDefaults, type SiteSettingKey } from "../../../../lib/site-settings";
 import { rejectCrossSiteMutation, readJsonObject } from "../../../../lib/request-security";
 
 export async function GET() {
   try {
     const auth = await requireApiPermission("content");
     if ("error" in auth) return auth.error;
-    return Response.json({ settings: await getSiteSettings() }, { headers: { "Cache-Control": "no-store" } });
+    return Response.json(await getSiteSettingsSnapshot(), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     logSettingsFailure("settings_read_failed", error);
     return Response.json({ error: "Não foi possível carregar as informações gerais agora." }, { status: 500, headers: { "Cache-Control": "no-store" } });
@@ -22,6 +22,11 @@ export async function POST(request: Request) {
     if ("error" in auth) return auth.error;
     const payload = await readJsonObject(request);
     if (!payload) return Response.json({ error: "Dados inválidos ou muito extensos." }, { status: 400 });
+    const receivedRevision = typeof payload.revision === "string" ? payload.revision.slice(0, 64) : "";
+    const current = await getSiteSettingsSnapshot();
+    if (!receivedRevision || receivedRevision !== current.revision) {
+      return Response.json({ error: "As informações foram atualizadas em outra janela. Atualize o painel antes de salvar para não sobrescrever o conteúdo." }, { status: 409, headers: { "Cache-Control": "no-store" } });
+    }
     await ensureDatabase();
     const db = getD1();
     const statements = siteSettingKeys.map((key) => {
@@ -37,7 +42,8 @@ export async function POST(request: Request) {
       "INSERT INTO audit_logs (actor_email, action, entity_type, entity_id, metadata) VALUES (?, 'update', 'settings', 'general', '{}')"
     ).bind(auth.identity.email));
     await db.batch(statements);
-    return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
+    const updated = await getSiteSettingsSnapshot();
+    return Response.json({ ok: true, revision: updated.revision }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     logSettingsFailure("settings_mutation_failed", error);
     return Response.json({ error: "Não foi possível salvar as informações agora. Tente novamente." }, { status: 500, headers: { "Cache-Control": "no-store" } });

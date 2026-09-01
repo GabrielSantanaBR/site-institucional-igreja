@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default function InternalAccessPage() {
-  redirect("/alteracao-de-dados");
+  // Alias legado removido: ele não deve revelar o endereço do painel.
+  notFound();
 }

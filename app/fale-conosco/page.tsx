@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { ContactChannelExperience } from "../components/ContactChannelExperience";
 
-export const metadata: Metadata = { title: "Fale Conosco", description: "Converse com a secretaria da PIBRG sobre agenda, visitas, ministérios e informações gerais." };
+export const metadata: Metadata = {
+  title: "Fale Conosco",
+  description: "Converse com a secretaria da PIBRG sobre agenda, visitas, ministérios e informações gerais.",
+  alternates: { canonical: "/fale-conosco" },
+};
 
 export default function FaleConoscoPage() {
   return <main className="contact-page">

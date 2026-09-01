@@ -188,3 +188,12 @@ body{overflow-x:hidden;text-rendering:optimizeLegibility}
 }
 
 @media(prefers-reduced-motion:reduce){.scroll-reveal{opacity:1;transform:none;transition:none}.site-header,.header-cta,.content-admin-list article{transition:none}}
+
+/* Encerramento de sessão: operação enviada somente por POST. */
+.internal-profile form{margin-top:14px}.internal-profile form button{padding:0;border:0;background:transparent;color:#bfd4f2;cursor:pointer;font:inherit;font-size:12px;text-align:left}
+@media(max-width:720px){.internal-profile form{grid-column:2;grid-row:1/3;align-self:center;margin:0}.internal-profile form button{margin:0;padding:8px 10px;border:1px solid #294a75;border-radius:8px}}
+
+/* Gestão de acessos: edição e desativação sem perder contexto da lista. */
+.user-form{grid-template-columns:minmax(150px,1fr) minmax(210px,1.4fr) minmax(145px,.8fr) auto auto}.user-active{display:flex!important;align-items:center;align-self:end;gap:8px;min-height:46px;white-space:nowrap}.user-active input{width:16px!important;height:16px;min-height:0!important;margin:0}.user-form-actions,.user-row-actions{display:flex;align-items:center;gap:6px}.user-form-actions{align-self:end}.user-form-actions button{white-space:nowrap}.user-row-actions{justify-content:flex-end}.user-list em{white-space:nowrap}.user-list article:has(.user-row-actions){grid-template-columns:42px minmax(0,1fr) auto auto}
+@media(max-width:1120px){.user-form{grid-template-columns:1fr 1fr}.user-active,.user-form-actions{align-self:auto}.user-form-actions{justify-content:flex-start}}
+@media(max-width:720px){.user-form-actions{width:100%}.user-form-actions button{flex:1}.user-row-actions{grid-column:2;justify-content:flex-start}.user-list article:has(.user-row-actions){grid-template-columns:42px minmax(0,1fr)}}

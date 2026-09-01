@@ -47,6 +47,8 @@ export type RuntimeEnvironment = {
   ADMIN_USERNAME?: string;
   ADMIN_PASSWORD?: string;
   ADMIN_SESSION_SECRET?: string;
+  /** URL canônica pública usada em links, SEO e dados estruturados. */
+  PUBLIC_SITE_URL?: string;
 };
 
 type RuntimeExecutionContext = {

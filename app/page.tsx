@@ -1,9 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 /* eslint-disable @next/next/no-img-element -- mídia publicada pelo painel já é otimizada no envio */
 import { getPublicContent } from "../lib/site-content";
 import { getSiteSettings } from "../lib/site-settings";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   const [allPosts, allEvents, settings] = await Promise.all([getPublicContent("post"), getPublicContent("event"), getSiteSettings()]);

@@ -17,6 +17,7 @@ interface Env {
   ADMIN_USERNAME?: string;
   ADMIN_PASSWORD?: string;
   ADMIN_SESSION_SECRET?: string;
+  PUBLIC_SITE_URL?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -43,9 +44,25 @@ const worker = {
       const url = new URL(request.url);
 
       if (url.pathname === "/_vinext/image") {
+        const fetchAsset = (path: string) => {
+          const assetRequest = new Request(new URL(path, request.url));
+          // ASSETS e IMAGES existem em produção. A prévia local não fornece
+          // esses bindings em alguns ambientes, então usamos o próprio Worker
+          // para servir a imagem original sem interromper a página.
+          return env.ASSETS ? env.ASSETS.fetch(assetRequest) : fetch(assetRequest);
+        };
+
+        if (!env.IMAGES) {
+          const source = url.searchParams.get("url") ?? "";
+          if (!source.startsWith("/") || source.startsWith("//")) {
+            return new Response("Imagem inválida.", { status: 400 });
+          }
+          return fetchAsset(source);
+        }
+
         const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
         return handleImageOptimization(request, {
-          fetchAsset: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
+          fetchAsset,
           transformImage: async (body, { width, format, quality }) => {
             const result = await env.IMAGES.input(body).transform(width > 0 ? { width } : {}).output({ format, quality });
             return result.response();
