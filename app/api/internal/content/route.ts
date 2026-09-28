@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     }
 
     const item = parseItem(payload);
-    if (!item) return json({ error: "Preencha o título e, para eventos, informe uma data válida." }, 400);
+    if (!item) return json({ error: "Confira o título, a data do evento e os links. Use HTTPS para endereços externos." }, 400);
     if (item.groupId) {
       const group = await db.prepare("SELECT id FROM content_groups WHERE id = ? LIMIT 1").bind(item.groupId).first<{ id: number }>();
       if (!group) return json({ error: "A categoria selecionada não existe mais." }, 400);
@@ -123,7 +123,9 @@ function parseItem(payload: Record<string, unknown>) {
   const kind = String(payload.kind ?? "") as ContentKind;
   const title = text(payload.title, 160);
   const date = validDate(payload.date);
-  if (!contentKinds.includes(kind) || !title || (kind === "event" && !date)) return null;
+  if (!contentKinds.includes(kind) || !title || (kind === "event" && !date) ||
+    (text(payload.imageUrl, 500) && !safeUrl(payload.imageUrl, true)) ||
+    (text(payload.linkUrl, 500) && !safeUrl(payload.linkUrl, false))) return null;
   return {
     kind,
     title,
@@ -155,7 +157,7 @@ function imagePosition(value: unknown) {
 function safeUrl(value: unknown, allowLocal: boolean) {
   const candidate = text(value, 500);
   if (!candidate) return "";
-  if (allowLocal && candidate.startsWith("/api/media/")) return candidate;
+  if (allowLocal && /^\/api\/media\/[1-9]\d*$/.test(candidate)) return candidate;
   try {
     const url = new URL(candidate);
     return url.protocol === "https:" ? url.toString() : "";
