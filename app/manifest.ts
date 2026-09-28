@@ -10,6 +10,6 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "pt-BR",
     background_color: "#050b16",
     theme_color: "#0b3d91",
-    icons: [{ src: "/images/pibrg-logo.png", sizes: "447x447", type: "image/png", purpose: "any maskable" }],
+    icons: [{ src: "/images/pibrg-logo.png", sizes: "447x447", type: "image/png", purpose: "maskable" }],
   };
 }

@@ -9,8 +9,9 @@ export async function GET(request: Request) {
     const auth = await requireApiPermission("content");
     if ("error" in auth) return auth.error;
     const kindValue = new URL(request.url).searchParams.get("kind");
-    const kind = contentKinds.includes(kindValue as ContentKind) ? kindValue as ContentKind : undefined;
-    return json({ items: await getAllContent(kind) });
+    if (kindValue && !contentKinds.includes(kindValue as ContentKind)) return json({ error: "Tipo de conteúdo inválido." }, 400);
+    const kind = kindValue as ContentKind | null;
+    return json({ items: await getAllContent(kind ?? undefined) });
   } catch (error) {
     logFailure("content_read_failed", error);
     return json({ error: "Não foi possível carregar o conteúdo agora. Tente novamente." }, 500);
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const item = parseItem(payload);
-    if (!item) return json({ error: "Preencha o título e, para eventos, informe uma data válida." }, 400);
+    if (!item) return json({ error: "Confira o título, a data do evento e os links. Use HTTPS para endereços externos." }, 400);
     if (item.groupId) {
       const group = await db.prepare("SELECT id FROM content_groups WHERE id = ? LIMIT 1").bind(item.groupId).first<{ id: number }>();
       if (!group) return json({ error: "A categoria selecionada não existe mais." }, 400);
@@ -123,7 +124,9 @@ function parseItem(payload: Record<string, unknown>) {
   const kind = String(payload.kind ?? "") as ContentKind;
   const title = text(payload.title, 160);
   const date = validDate(payload.date);
-  if (!contentKinds.includes(kind) || !title || (kind === "event" && !date)) return null;
+  if (!contentKinds.includes(kind) || !title || (kind === "event" && !date) ||
+    (text(payload.imageUrl, 500) && !safeUrl(payload.imageUrl, true)) ||
+    (text(payload.linkUrl, 500) && !safeUrl(payload.linkUrl, false))) return null;
   return {
     kind,
     title,
@@ -155,7 +158,7 @@ function imagePosition(value: unknown) {
 function safeUrl(value: unknown, allowLocal: boolean) {
   const candidate = text(value, 500);
   if (!candidate) return "";
-  if (allowLocal && candidate.startsWith("/api/media/")) return candidate;
+  if (allowLocal && /^\/api\/media\/[0-9]+-[0-9a-f-]+\.(?:jpg|png|webp|avif)$/i.test(candidate)) return candidate;
   try {
     const url = new URL(candidate);
     return url.protocol === "https:" ? url.toString() : "";
