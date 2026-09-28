@@ -158,7 +158,7 @@ function imagePosition(value: unknown) {
 function safeUrl(value: unknown, allowLocal: boolean) {
   const candidate = text(value, 500);
   if (!candidate) return "";
-  if (allowLocal && /^\/api\/media\/[1-9]\d*$/.test(candidate)) return candidate;
+  if (allowLocal && /^\/api\/media\/[0-9]+-[0-9a-f-]+\.(?:jpg|png|webp|avif)$/i.test(candidate)) return candidate;
   try {
     const url = new URL(candidate);
     return url.protocol === "https:" ? url.toString() : "";
