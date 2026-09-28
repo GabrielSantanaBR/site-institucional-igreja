@@ -9,8 +9,9 @@ export async function GET(request: Request) {
     const auth = await requireApiPermission("content");
     if ("error" in auth) return auth.error;
     const kindValue = new URL(request.url).searchParams.get("kind");
-    const kind = contentKinds.includes(kindValue as ContentKind) ? kindValue as ContentKind : undefined;
-    return json({ items: await getAllContent(kind) });
+    if (kindValue && !contentKinds.includes(kindValue as ContentKind)) return json({ error: "Tipo de conteúdo inválido." }, 400);
+    const kind = kindValue as ContentKind | null;
+    return json({ items: await getAllContent(kind ?? undefined) });
   } catch (error) {
     logFailure("content_read_failed", error);
     return json({ error: "Não foi possível carregar o conteúdo agora. Tente novamente." }, 500);
