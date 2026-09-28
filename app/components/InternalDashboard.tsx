@@ -17,6 +17,10 @@ const statusLabels: Record<string, string> = { new: "Novo", praying: "Em oraçã
 const contentKinds: ContentKind[] = ["post", "sermon", "event", "devotional", "leader", "gallery"];
 const kindLabels: Record<ContentKind, string> = { post: "Postagens", sermon: "Sermões", event: "Agenda", devotional: "Devocionais", leader: "Liderança", gallery: "Galeria" };
 
+function confirmDiscardDraft() {
+  return !document.querySelector('[data-unsaved="true"]') || window.confirm("Descartar as alterações que ainda não foram salvas?");
+}
+
 export function InternalDashboard({ identity, signOutPath }: { identity: AdminIdentity; signOutPath: string }) {
   const permissions: Permissions = {
     content: ["owner", "admin", "secretary"].includes(identity.role),
@@ -35,16 +39,19 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
     ["audit", "Atividades", permissions.audit],
   ].filter((tab) => tab[2]) as [string, string, boolean][], [permissions.audit, permissions.contacts, permissions.content, permissions.prayers, permissions.users]);
   const [active, setActive] = useState("overview");
+  function navigate(tab: string) {
+    if (tab === active || !confirmDiscardDraft()) setActive(tab);
+  }
 
   return <main className="internal-app">
     <aside className="internal-sidebar">
       <div className="internal-brand"><span>PIBRG</span><strong>Gestão interna</strong></div>
-      <nav aria-label="Seções da gestão">{tabs.map(([key, label]) => <button type="button" className={active === key ? "active" : ""} onClick={() => setActive(key)} key={key}>{label}</button>)}</nav>
+      <nav aria-label="Seções da gestão">{tabs.map(([key, label]) => <button type="button" className={active === key ? "active" : ""} onClick={() => navigate(key)} key={key}>{label}</button>)}</nav>
       <div className="internal-profile"><span>{identity.name}</span><small>{roleLabels[identity.role]}</small><form action={signOutPath} method="post"><button type="submit">Sair com segurança</button></form></div>
     </aside>
     <section className="internal-main">
       <header className="internal-topbar"><div><p>Área protegida</p><h1>{tabs.find(([key]) => key === active)?.[1]}</h1></div><a href="/" target="_blank" rel="noreferrer">Visualizar site ↗</a></header>
-      {active === "overview" && <Overview identity={identity} permissions={permissions} onNavigate={setActive} />}
+      {active === "overview" && <Overview identity={identity} permissions={permissions} onNavigate={navigate} />}
       {active === "contacts" && <ContactInbox canDelete={["owner", "admin"].includes(identity.role)} />}
       {active === "prayers" && <PrayerManager canDelete={["owner", "admin"].includes(identity.role)} />}
       {active === "settings" && <SettingsManager />}
@@ -114,7 +121,7 @@ function SettingsManager() {
   }
   if (loading) return <Empty>Carregando informações do site…</Empty>;
   if (!settings) return <Notice type="error">{error || "Não foi possível abrir as informações gerais."}</Notice>;
-  return <form ref={formRef} className="settings-form internal-stack" onSubmit={submit} onChange={() => { setDirty(true); setSaved(false); }} aria-busy={saving}>
+  return <form ref={formRef} className="settings-form internal-stack" data-unsaved={dirty} onSubmit={submit} onChange={() => { setDirty(true); setSaved(false); }} aria-busy={saving}>
     <section className="internal-content-intro"><div><p>Página inicial e rodapé</p><h2>Informações gerais</h2></div><span>Alterações globais</span></section>
     {error && <Notice type="error">{error}</Notice>}{saved && <Notice type="success">Informações salvas e publicadas com sucesso.</Notice>}
     <section className="settings-panel"><header><div><p className="settings-kicker">Apresentação</p><h2>Mensagem principal</h2></div><span>Início do site</span></header><div className="settings-grid"><label className="wide">Texto acima do título<input name="heroEyebrow" maxLength={300} defaultValue={settings.heroEyebrow} /></label><label className="wide">Título principal <small>Use uma nova linha para separar as duas frases.</small><textarea name="heroTitle" rows={3} maxLength={300} defaultValue={settings.heroTitle} /></label><label className="wide">Texto de apresentação<textarea name="heroText" rows={4} maxLength={1200} defaultValue={settings.heroText} /></label><label className="wide">Sobre a comunidade<textarea name="welcomeText" rows={4} maxLength={1200} defaultValue={settings.welcomeText} /></label></div></section>
@@ -238,12 +245,14 @@ function ContentManager() {
   }
   function changeKind(nextKind: ContentKind) {
     if (nextKind === kind) return;
+    if (!confirmDiscardDraft()) return;
     const cached = contentCache.current.get(nextKind);
     setItems(cached ?? []);
     setLoading(!cached);
     setKind(nextKind); setEditing(null); setManagingGroups(false); setSavedMessage(""); setError(""); setQuery("");
   }
   async function toggleGroups() {
+    if (!confirmDiscardDraft()) return;
     if (managingGroups) { setManagingGroups(false); return; }
     setManagingGroups(true); setEditing(null); setGroupsLoading(true); setError("");
     try {
@@ -259,14 +268,14 @@ function ContentManager() {
   const visible = normalizedQuery ? items.filter((item) => `${item.title} ${item.subtitle} ${item.body} ${groupName(item.groupId, groups)}`.toLocaleLowerCase("pt-BR").includes(normalizedQuery)) : items;
   return <div className="internal-stack">
     <div className="internal-content-intro"><div><p>Gerenciador do site</p><h2>{kindLabels[kind]}</h2></div><span>{visible.length} {visible.length === 1 ? "item" : "itens"}</span></div>
-    <div className="internal-toolbar"><div className="internal-filters">{contentKinds.map((value) => <button type="button" className={kind === value ? "active" : ""} aria-pressed={kind === value} onClick={() => changeKind(value)} key={value}>{kindLabels[value]}</button>)}</div><div className="internal-toolbar-actions"><button type="button" onClick={() => void load()} disabled={loading}>{loading ? "Atualizando…" : "Atualizar seção"}</button>{supportsGroups && <button type="button" onClick={() => void toggleGroups()} disabled={groupsLoading}>{managingGroups ? "Voltar aos itens" : groupsLoading ? "Abrindo categorias…" : "Categorias e capas"}</button>}<button type="button" className="primary" onClick={() => { setManagingGroups(false); setSavedMessage(""); setEditing(blankItem(kind)); }}>+ Adicionar</button></div></div>
+    <div className="internal-toolbar"><div className="internal-filters">{contentKinds.map((value) => <button type="button" className={kind === value ? "active" : ""} aria-pressed={kind === value} onClick={() => changeKind(value)} key={value}>{kindLabels[value]}</button>)}</div><div className="internal-toolbar-actions"><button type="button" onClick={() => void load()} disabled={loading}>{loading ? "Atualizando…" : "Atualizar seção"}</button>{supportsGroups && <button type="button" onClick={() => void toggleGroups()} disabled={groupsLoading}>{managingGroups ? "Voltar aos itens" : groupsLoading ? "Abrindo categorias…" : "Categorias e capas"}</button>}<button type="button" className="primary" onClick={() => { if (!confirmDiscardDraft()) return; setManagingGroups(false); setSavedMessage(""); setEditing(blankItem(kind)); }}>+ Adicionar</button></div></div>
     {!managingGroups && kind !== "event" && items.length > 5 && <div className="content-list-tools"><label><span className="sr-only">Buscar nesta seção</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar em ${kindLabels[kind].toLocaleLowerCase("pt-BR")}`} /></label><span>{visible.length === items.length ? `${items.length} itens` : `${visible.length} de ${items.length} itens`}</span></div>}
     {error && <Notice type="error">{error}</Notice>}
     {savedMessage && <Notice type="success">{savedMessage} {kind === "event" && <a href="/agenda" target="_blank" rel="noreferrer">Ver agenda no site ↗</a>}</Notice>}
     {managingGroups && (groupsLoading ? <Empty>Carregando categorias, pessoas e fotos…</Empty> : <GroupManager groups={groups} items={groupItems} onChanged={load} />)}
     {!managingGroups && editing && <ContentForm item={editing} groups={groups} onCancel={() => setEditing(null)} onSaved={saved} />}
-    {!managingGroups && kind === "event" && (loading ? <Empty>Carregando agenda…</Empty> : <AdminAgendaBoard key={agendaFocus || "agenda"} initialDate={agendaFocus.split("|")[0]} events={visible} onAdd={(date) => { setSavedMessage(""); setEditing(blankItem("event", date)); }} onEdit={(item) => { setSavedMessage(""); setEditing(item); }} />)}
-    {!managingGroups && kind !== "event" && (loading ? <Empty>Carregando conteúdo…</Empty> : !visible.length ? <section className="internal-empty-action"><h2>{items.length ? "Nenhum resultado encontrado" : "Nenhum item cadastrado"}</h2><p>{items.length ? "Tente outro termo de busca." : "Use “Adicionar” para preparar a primeira publicação desta seção. Você pode salvar como oculto antes de colocar no ar."}</p>{!items.length && <button type="button" className="primary" onClick={() => setEditing(blankItem(kind))}>Criar primeiro item</button>}</section> : <div className="content-admin-list">{visible.map((item) => <article key={item.id} className={!item.active ? "inactive" : ""}>{item.imageUrl ? <img src={item.imageUrl} alt="" style={{ objectPosition: item.imagePosition }} /> : <div className="content-admin-placeholder" aria-hidden="true">{kindLabels[item.kind].slice(0, 1)}</div>}<div><span>{item.active ? "Publicado" : "Oculto"}</span><h2>{item.title}</h2><p>{groupName(item.groupId, groups) || item.subtitle}{item.date ? ` • ${formatShortDate(item.date)}` : ""}</p></div><div><button type="button" onClick={() => { setSavedMessage(""); setEditing(item); }}>Editar</button><button type="button" className="danger" onClick={() => void remove(item)}>Excluir</button></div></article>)}</div>)}
+    {!managingGroups && kind === "event" && (loading ? <Empty>Carregando agenda…</Empty> : <AdminAgendaBoard key={agendaFocus || "agenda"} initialDate={agendaFocus.split("|")[0]} events={visible} onAdd={(date) => { if (!confirmDiscardDraft()) return; setSavedMessage(""); setEditing(blankItem("event", date)); }} onEdit={(item) => { if (!confirmDiscardDraft()) return; setSavedMessage(""); setEditing(item); }} />)}
+    {!managingGroups && kind !== "event" && (loading ? <Empty>Carregando conteúdo…</Empty> : !visible.length ? <section className="internal-empty-action"><h2>{items.length ? "Nenhum resultado encontrado" : "Nenhum item cadastrado"}</h2><p>{items.length ? "Tente outro termo de busca." : "Use “Adicionar” para preparar a primeira publicação desta seção. Você pode salvar como oculto antes de colocar no ar."}</p>{!items.length && <button type="button" className="primary" onClick={() => setEditing(blankItem(kind))}>Criar primeiro item</button>}</section> : <div className="content-admin-list">{visible.map((item) => <article key={item.id} className={!item.active ? "inactive" : ""}>{item.imageUrl ? <img src={item.imageUrl} alt="" style={{ objectPosition: item.imagePosition }} /> : <div className="content-admin-placeholder" aria-hidden="true">{kindLabels[item.kind].slice(0, 1)}</div>}<div><span>{item.active ? "Publicado" : "Oculto"}</span><h2>{item.title}</h2><p>{groupName(item.groupId, groups) || item.subtitle}{item.date ? ` • ${formatShortDate(item.date)}` : ""}</p></div><div><button type="button" onClick={() => { if (!confirmDiscardDraft()) return; setSavedMessage(""); setEditing(item); }}>Editar</button><button type="button" className="danger" onClick={() => void remove(item)}>Excluir</button></div></article>)}</div>)}
   </div>;
 }
 
@@ -316,7 +325,7 @@ function ContentForm({ item, groups, onCancel, onSaved }: { item: ContentItem; g
   const needsImage = ["post", "sermon", "event", "devotional", "leader", "gallery"].includes(item.kind);
   const needsAuthor = ["post", "sermon", "devotional"].includes(item.kind);
   const needsLink = ["post", "sermon"].includes(item.kind);
-  return <form ref={formRef} className={`internal-form content-editor ${item.kind === "event" ? "event-editor" : ""}`} onSubmit={submit} onChange={() => setDirty(true)} aria-busy={saving}><header><div><p>{item.id > 0 ? "Editar item" : "Novo item"}</p><h2>{kindLabels[item.kind]}</h2><span>{item.kind === "event" ? "Título e data são obrigatórios. Horário, local, descrição e foto são opcionais." : "Revise as informações e a prévia antes de publicar."}</span></div><div className="editor-state"><em>{saving ? "Gravando no site…" : dirty || pendingImage ? "Alterações não salvas" : item.id ? "Tudo salvo" : "Novo conteúdo"}</em><button type="button" onClick={cancel} disabled={saving}>Fechar</button></div></header>
+  return <form ref={formRef} className={`internal-form content-editor ${item.kind === "event" ? "event-editor" : ""}`} data-unsaved={dirty || Boolean(pendingImage)} onSubmit={submit} onChange={() => setDirty(true)} aria-busy={saving}><header><div><p>{item.id > 0 ? "Editar item" : "Novo item"}</p><h2>{kindLabels[item.kind]}</h2><span>{item.kind === "event" ? "Título e data são obrigatórios. Horário, local, descrição e foto são opcionais." : "Revise as informações e a prévia antes de publicar."}</span></div><div className="editor-state"><em>{saving ? "Gravando no site…" : dirty || pendingImage ? "Alterações não salvas" : item.id ? "Tudo salvo" : "Novo conteúdo"}</em><button type="button" onClick={cancel} disabled={saving}>Fechar</button></div></header>
     {error && <Notice type="error">{error}</Notice>}
     {item.kind === "event" && <div className="event-editor-guide"><span>1</span><div><strong>Dados principais</strong><p>Use a mesma data para cadastrar quantos eventos desejar. Eles serão organizados automaticamente pelo horário.</p></div><span>2</span><div><strong>Publicação automática</strong><p>Ao salvar como publicado, o evento entra no calendário e na fila dos cinco próximos.</p></div></div>}
     <div className="internal-form-grid"><label>{item.kind === "leader" ? "Nome da pessoa" : "Título"}<input name="title" required maxLength={160} defaultValue={item.title} placeholder={titlePlaceholder(item.kind)} /></label><label>{subtitleLabel(item.kind)}<input name="subtitle" maxLength={160} defaultValue={item.subtitle} placeholder={subtitlePlaceholder(item.kind)} /></label>
@@ -324,7 +333,7 @@ function ContentForm({ item, groups, onCancel, onSaved }: { item: ContentItem; g
     {["leader", "gallery"].includes(item.kind) && <label>Categoria ou grupo<select name="groupId" defaultValue={item.groupId ?? ""}><option value="">Sem categoria</option>{groups.filter((group) => group.active || group.id === item.groupId).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>}
     {needsAuthor && <label>Autor ou pregador<input name="author" maxLength={120} defaultValue={item.author} placeholder="Nome de quem assina a mensagem" /></label>}
     {needsLink && <label className="wide">Link relacionado<input name="linkUrl" type="url" maxLength={500} defaultValue={item.linkUrl} placeholder={item.kind === "sermon" ? "https://youtube.com/…" : "https://… (opcional)"} /></label>}
-    {needsImage && <div className="wide"><ImageUploader value={imageUrl} previewUrl={previewUrl} pending={Boolean(pendingImage)} variant={item.kind} position={imagePosition} onPositionChange={setImagePosition} onSelected={(file, url) => { setPendingImage(file); setPreviewUrl(url); }} onRemove={() => { setPendingImage(null); setPreviewUrl(""); setImageUrl(""); }} /></div>}
+    {needsImage && <div className="wide"><ImageUploader value={imageUrl} previewUrl={previewUrl} pending={Boolean(pendingImage)} variant={item.kind} position={imagePosition} onPositionChange={(value) => { setImagePosition(value); setDirty(true); }} onSelected={(file, url) => { setPendingImage(file); setPreviewUrl(url); }} onRemove={() => { setPendingImage(null); setPreviewUrl(""); setImageUrl(""); setDirty(true); }} /></div>}
     <label>Ordem<input name="sortOrder" type="number" min="0" max="999" defaultValue={item.sortOrder} /></label><label className="internal-check"><input name="active" type="checkbox" checked={publishing} onChange={(event) => { setPublishing(event.target.checked); setDirty(true); }} /> Publicar no site</label>
     <label className="wide">{bodyLabel(item.kind)}<textarea name="body" rows={7} maxLength={2000} defaultValue={item.body} placeholder="Escreva o conteúdo que será exibido no site." /></label></div>
     <footer><span>{dirty || pendingImage ? "Há mudanças aguardando salvamento. Atalho: Ctrl + S." : "Nenhuma alteração pendente."}</span><div><button type="button" onClick={cancel} disabled={saving}>Cancelar</button><button type="submit" className="primary" disabled={saving}>{saving ? "Salvando com segurança…" : publishing ? "Salvar e publicar" : "Salvar como oculto"}</button></div></footer>
