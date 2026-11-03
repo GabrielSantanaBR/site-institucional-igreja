@@ -56,7 +56,7 @@ export async function getPublicContent(kind: ContentKind): Promise<ContentItem[]
        image_url AS imageUrl, link_url AS linkUrl, author, group_id AS groupId,
        image_position AS imagePosition,
        sort_order AS sortOrder, active, updated_at AS updatedAt
-       FROM content_items WHERE kind = ? ORDER BY sort_order, id`
+       FROM content_items WHERE kind = ? AND active = 1 ORDER BY sort_order, id`
     ).bind(kind).all<DatabaseContentItem>();
     if (!results.length) return defaults[kind];
     return results.map(normalize).filter((item) => item.active).sort((left, right) => comparePublicContent(kind, left, right));

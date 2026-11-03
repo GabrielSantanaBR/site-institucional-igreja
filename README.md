@@ -118,3 +118,34 @@ The timeout defaults can be overridden for a controlled canary with `SITES_INSTA
 
 - [vinext Documentation](https://github.com/cloudflare/vinext)
 - [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+
+## Anúncios genéricos e configurações
+
+Em **Informações gerais → Anúncios no site**, marque os formatos desejados e
+use **Salvar informações gerais**. Os três modelos começam desligados:
+
+- **Faixa inferior:** fechável; o fechamento dura a sessão da aba. Não cobre os
+  formulários de contato e oração e é ocultada quando o chat ou menu está aberto.
+- **Lateral adaptável:** fixa apenas em telas a partir de 1600 px; em telas menores,
+  aparece no fluxo da página antes do rodapé.
+- **Banner no conteúdo:** bloco antes do rodapé, sem sobreposição.
+
+As prévias são genéricas e não são anúncios de uma rede de publicidade: não geram
+receita, não aceitam scripts externos e não coletam métricas. Uma operação comercial
+real exige cadastrar anunciantes ou integrar uma rede em uma etapa posterior.
+Não são exibidas na administração. Nenhuma migração é necessária: as chaves
+`adBottomEnabled`, `adSideEnabled` e `adInlineEnabled` usam `site_settings`.
+O valor válido é a string `true` ou `false`; campos omitidos em um salvamento são
+preservados. Escritas concorrentes usam revisão transacional e retornam HTTP 409
+quando o formulário está desatualizado. O painel exige nova leitura após conflito.
+
+### Verificação para desenvolvimento
+
+- `npm run typecheck`: checagem TypeScript com tipos do Worker.
+- `npm run lint`: análise estática.
+- `npm test`: build e testes existentes, testes funcionais de configurações em
+  SQLite isolado e testes DOM dos anúncios/controles (sem dados de produção).
+
+Os testes funcionais substituem apenas a identidade e o binding do banco. Eles
+executam as validações reais da API e o SQL das migrações. Não substituem um teste
+com credenciais e armazenamento na hospedagem publicada.

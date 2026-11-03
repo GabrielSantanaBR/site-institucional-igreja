@@ -24,12 +24,24 @@ export async function readJsonObject(request: Request, maxBytes = MAX_JSON_BYTES
   if (contentType !== "application/json" && !contentType?.endsWith("+json")) return null;
   const declaredSize = Number(request.headers.get("content-length") || 0);
   if (declaredSize > maxBytes) return null;
-  const bytes = await request.arrayBuffer();
-  if (bytes.byteLength > maxBytes) return null;
+  const reader = request.body?.getReader();
+  if (!reader) return null;
   try {
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maxBytes) { await reader.cancel(); return null; }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
     const parsed = JSON.parse(new TextDecoder().decode(bytes));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
   } catch {
     return null;
-  }
+  } finally { reader.releaseLock(); }
 }
