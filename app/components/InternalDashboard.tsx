@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, ty
 import type { AdminIdentity } from "../../lib/internal-auth";
 import type { ContentGroup, ContentItem, ContentKind } from "../../lib/site-content";
 import type { SiteSettings } from "../../lib/site-settings";
+import { AdSettings } from "./AdSettings";
 import { ContactInbox } from "./ContactInbox";
 
 type Permissions = { content: boolean; prayers: boolean; contacts: boolean; users: boolean; audit: boolean };
@@ -36,15 +37,16 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
   ].filter((tab) => tab[2]) as [string, string, boolean][], [permissions.audit, permissions.contacts, permissions.content, permissions.prayers, permissions.users]);
   const [active, setActive] = useState("overview");
 
+  function navigate(tab: string) { if (tab === active || confirmLeaveEditor()) setActive(tab); }
   return <main className="internal-app">
     <aside className="internal-sidebar">
       <div className="internal-brand"><span>PIBRG</span><strong>Gestão interna</strong></div>
-      <nav aria-label="Seções da gestão">{tabs.map(([key, label]) => <button type="button" className={active === key ? "active" : ""} onClick={() => setActive(key)} key={key}>{label}</button>)}</nav>
+      <nav aria-label="Seções da gestão">{tabs.map(([key, label]) => <button type="button" className={active === key ? "active" : ""} onClick={() => navigate(key)} key={key}>{label}</button>)}</nav>
       <div className="internal-profile"><span>{identity.name}</span><small>{roleLabels[identity.role]}</small><form action={signOutPath} method="post"><button type="submit">Sair com segurança</button></form></div>
     </aside>
     <section className="internal-main">
       <header className="internal-topbar"><div><p>Área protegida</p><h1>{tabs.find(([key]) => key === active)?.[1]}</h1></div><a href="/" target="_blank" rel="noreferrer">Visualizar site ↗</a></header>
-      {active === "overview" && <Overview identity={identity} permissions={permissions} onNavigate={setActive} />}
+      {active === "overview" && <Overview identity={identity} permissions={permissions} onNavigate={navigate} />}
       {active === "contacts" && <ContactInbox canDelete={["owner", "admin"].includes(identity.role)} />}
       {active === "prayers" && <PrayerManager canDelete={["owner", "admin"].includes(identity.role)} />}
       {active === "settings" && <SettingsManager />}
@@ -69,6 +71,11 @@ function Overview({ identity, permissions, onNavigate }: { identity: AdminIdenti
     <div className="internal-card-grid">{cards.map((card) => <button key={card.key} type="button" disabled={!card.allowed} onClick={() => card.allowed && onNavigate(card.key)}><span>{card.allowed ? "Disponível" : "Sem acesso"}</span><h2>{card.title}</h2><p>{card.text}</p><strong>{card.allowed ? "Abrir ferramenta →" : "Protegido pelo seu nível"}</strong></button>)}</div>
     <section className="internal-security-note"><strong>Publicação organizada</strong><p>As alterações ficam salvas no banco, as fotos são reduzidas antes do envio e cada ação importante é registrada no histórico.</p></section>
   </div>;
+}
+
+function confirmLeaveEditor() {
+  if (document.querySelector('form[aria-busy="true"]')) return false;
+  return !document.querySelector('[data-unsaved="true"]') || window.confirm("Descartar as alterações ainda não salvas?");
 }
 
 function SettingsManager() {
@@ -107,20 +114,33 @@ function SettingsManager() {
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
     try {
       const result = await api<{ ok: true; revision: string }>("/api/internal/settings", { method: "POST", body: JSON.stringify({ ...payload, revision }) });
+      setSettings((current) => current ? { ...current, ...Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, String(value).trim()])) } : current);
       setRevision(result.revision); setDirty(false); setSaved(true);
     }
     catch (reason) { setError(message(reason)); }
     finally { submitting.current = false; setSaving(false); }
   }
+  async function reloadSettings() {
+    if (!confirmLeaveEditor()) return;
+    setLoading(true); setError("");
+    try {
+      const data = await api<{ settings: SiteSettings; revision: string }>("/api/internal/settings");
+      setSettings(data.settings); setRevision(data.revision); setDirty(false); setSaved(false);
+    } catch (reason) { setError(message(reason)); }
+    finally { setLoading(false); }
+  }
   if (loading) return <Empty>Carregando informações do site…</Empty>;
   if (!settings) return <Notice type="error">{error || "Não foi possível abrir as informações gerais."}</Notice>;
-  return <form ref={formRef} className="settings-form internal-stack" onSubmit={submit} onChange={() => { setDirty(true); setSaved(false); }} aria-busy={saving}>
+  return <form key={revision} ref={formRef} className="settings-form internal-stack" data-unsaved={dirty} onSubmit={submit} onChange={() => { setDirty(true); setSaved(false); }} aria-busy={saving}>
     <section className="internal-content-intro"><div><p>Página inicial e rodapé</p><h2>Informações gerais</h2></div><span>Alterações globais</span></section>
     {error && <Notice type="error">{error}</Notice>}{saved && <Notice type="success">Informações salvas e publicadas com sucesso.</Notice>}
+    <fieldset disabled={saving} style={{ display: "contents" }}>
     <section className="settings-panel"><header><div><p className="settings-kicker">Apresentação</p><h2>Mensagem principal</h2></div><span>Início do site</span></header><div className="settings-grid"><label className="wide">Texto acima do título<input name="heroEyebrow" maxLength={300} defaultValue={settings.heroEyebrow} /></label><label className="wide">Título principal <small>Use uma nova linha para separar as duas frases.</small><textarea name="heroTitle" rows={3} maxLength={300} defaultValue={settings.heroTitle} /></label><label className="wide">Texto de apresentação<textarea name="heroText" rows={4} maxLength={1200} defaultValue={settings.heroText} /></label><label className="wide">Sobre a comunidade<textarea name="welcomeText" rows={4} maxLength={1200} defaultValue={settings.welcomeText} /></label></div></section>
     <section className="settings-panel"><header><div><p className="settings-kicker">Mensagem bíblica</p><h2>Versículo em destaque</h2></div><span>Página inicial</span></header><div className="settings-grid"><label className="wide">Texto do versículo<textarea name="verseText" rows={3} maxLength={300} defaultValue={settings.verseText} /></label><label>Referência<input name="verseReference" maxLength={300} defaultValue={settings.verseReference} /></label></div></section>
     <section className="settings-panel"><header><div><p className="settings-kicker">Localização e canais</p><h2>Contato público</h2></div><span>Início e rodapé</span></header><div className="settings-grid"><label>Endereço<input name="address" maxLength={300} defaultValue={settings.address} /></label><label>Cidade e estado<input name="city" maxLength={300} defaultValue={settings.city} /></label><label>CEP<input name="postalCode" maxLength={300} defaultValue={settings.postalCode} /></label><label>Nome no Instagram<input name="instagramHandle" maxLength={300} defaultValue={settings.instagramHandle} /></label><label className="wide">Link do Instagram<input name="instagramUrl" type="url" maxLength={500} defaultValue={settings.instagramUrl} /></label><label className="wide">Link do Facebook<input name="facebookUrl" type="url" maxLength={500} defaultValue={settings.facebookUrl} /></label></div></section>
-    <footer className="settings-actions"><span>{dirty ? "Há alterações aguardando salvamento. Atalho: Ctrl + S." : "As informações exibidas estão salvas."}</span><div><a href="/" target="_blank" rel="noreferrer">Visualizar site ↗</a><button type="submit" className="primary" disabled={saving || !dirty}>{saving ? "Salvando…" : "Salvar informações gerais"}</button></div></footer>
+    <AdSettings settings={settings} onChange={(key, value) => { setSettings((current) => current ? { ...current, [key]: value } : current); setDirty(true); setSaved(false); }} />
+    </fieldset>
+    <footer className="settings-actions"><span>{dirty ? "Há alterações aguardando salvamento. Atalho: Ctrl + S." : "As informações exibidas estão salvas."}</span><div><a href="/" target="_blank" rel="noreferrer">Visualizar site ↗</a><button type="button" disabled={saving} onClick={() => void reloadSettings()}>Recarregar dados</button><button type="submit" className="primary" disabled={saving || !dirty}>{saving ? "Salvando…" : "Salvar informações gerais"}</button></div></footer>
   </form>;
 }
 
@@ -234,16 +254,17 @@ function ContentManager() {
     });
     if (savedItem.kind === "event") setAgendaFocus(`${savedItem.date}|${savedItem.updatedAt}`);
     setEditing(null); setError("");
-    setSavedMessage(savedItem.kind === "event" ? "Evento salvo e publicado na agenda." : "Alteração salva e publicada no site.");
+    setSavedMessage(savedItem.active ? "Alteração salva e publicada no site." : "Item salvo como oculto. Não está visível no site.");
   }
   function changeKind(nextKind: ContentKind) {
-    if (nextKind === kind) return;
+    if (nextKind === kind || !confirmLeaveEditor()) return;
     const cached = contentCache.current.get(nextKind);
     setItems(cached ?? []);
     setLoading(!cached);
     setKind(nextKind); setEditing(null); setManagingGroups(false); setSavedMessage(""); setError(""); setQuery("");
   }
   async function toggleGroups() {
+    if (!confirmLeaveEditor()) return;
     if (managingGroups) { setManagingGroups(false); return; }
     setManagingGroups(true); setEditing(null); setGroupsLoading(true); setError("");
     try {
@@ -259,14 +280,14 @@ function ContentManager() {
   const visible = normalizedQuery ? items.filter((item) => `${item.title} ${item.subtitle} ${item.body} ${groupName(item.groupId, groups)}`.toLocaleLowerCase("pt-BR").includes(normalizedQuery)) : items;
   return <div className="internal-stack">
     <div className="internal-content-intro"><div><p>Gerenciador do site</p><h2>{kindLabels[kind]}</h2></div><span>{visible.length} {visible.length === 1 ? "item" : "itens"}</span></div>
-    <div className="internal-toolbar"><div className="internal-filters">{contentKinds.map((value) => <button type="button" className={kind === value ? "active" : ""} aria-pressed={kind === value} onClick={() => changeKind(value)} key={value}>{kindLabels[value]}</button>)}</div><div className="internal-toolbar-actions"><button type="button" onClick={() => void load()} disabled={loading}>{loading ? "Atualizando…" : "Atualizar seção"}</button>{supportsGroups && <button type="button" onClick={() => void toggleGroups()} disabled={groupsLoading}>{managingGroups ? "Voltar aos itens" : groupsLoading ? "Abrindo categorias…" : "Categorias e capas"}</button>}<button type="button" className="primary" onClick={() => { setManagingGroups(false); setSavedMessage(""); setEditing(blankItem(kind)); }}>+ Adicionar</button></div></div>
+    <div className="internal-toolbar"><div className="internal-filters">{contentKinds.map((value) => <button type="button" className={kind === value ? "active" : ""} aria-pressed={kind === value} onClick={() => changeKind(value)} key={value}>{kindLabels[value]}</button>)}</div><div className="internal-toolbar-actions"><button type="button" onClick={() => void load()} disabled={loading}>{loading ? "Atualizando…" : "Atualizar seção"}</button>{supportsGroups && <button type="button" onClick={() => void toggleGroups()} disabled={groupsLoading}>{managingGroups ? "Voltar aos itens" : groupsLoading ? "Abrindo categorias…" : "Categorias e capas"}</button>}<button type="button" className="primary" onClick={() => { if (!confirmLeaveEditor()) return; setManagingGroups(false); setSavedMessage(""); setEditing(blankItem(kind)); }}>+ Adicionar</button></div></div>
     {!managingGroups && kind !== "event" && items.length > 5 && <div className="content-list-tools"><label><span className="sr-only">Buscar nesta seção</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar em ${kindLabels[kind].toLocaleLowerCase("pt-BR")}`} /></label><span>{visible.length === items.length ? `${items.length} itens` : `${visible.length} de ${items.length} itens`}</span></div>}
     {error && <Notice type="error">{error}</Notice>}
     {savedMessage && <Notice type="success">{savedMessage} {kind === "event" && <a href="/agenda" target="_blank" rel="noreferrer">Ver agenda no site ↗</a>}</Notice>}
     {managingGroups && (groupsLoading ? <Empty>Carregando categorias, pessoas e fotos…</Empty> : <GroupManager groups={groups} items={groupItems} onChanged={load} />)}
-    {!managingGroups && editing && <ContentForm item={editing} groups={groups} onCancel={() => setEditing(null)} onSaved={saved} />}
-    {!managingGroups && kind === "event" && (loading ? <Empty>Carregando agenda…</Empty> : <AdminAgendaBoard key={agendaFocus || "agenda"} initialDate={agendaFocus.split("|")[0]} events={visible} onAdd={(date) => { setSavedMessage(""); setEditing(blankItem("event", date)); }} onEdit={(item) => { setSavedMessage(""); setEditing(item); }} />)}
-    {!managingGroups && kind !== "event" && (loading ? <Empty>Carregando conteúdo…</Empty> : !visible.length ? <section className="internal-empty-action"><h2>{items.length ? "Nenhum resultado encontrado" : "Nenhum item cadastrado"}</h2><p>{items.length ? "Tente outro termo de busca." : "Use “Adicionar” para preparar a primeira publicação desta seção. Você pode salvar como oculto antes de colocar no ar."}</p>{!items.length && <button type="button" className="primary" onClick={() => setEditing(blankItem(kind))}>Criar primeiro item</button>}</section> : <div className="content-admin-list">{visible.map((item) => <article key={item.id} className={!item.active ? "inactive" : ""}>{item.imageUrl ? <img src={item.imageUrl} alt="" style={{ objectPosition: item.imagePosition }} /> : <div className="content-admin-placeholder" aria-hidden="true">{kindLabels[item.kind].slice(0, 1)}</div>}<div><span>{item.active ? "Publicado" : "Oculto"}</span><h2>{item.title}</h2><p>{groupName(item.groupId, groups) || item.subtitle}{item.date ? ` • ${formatShortDate(item.date)}` : ""}</p></div><div><button type="button" onClick={() => { setSavedMessage(""); setEditing(item); }}>Editar</button><button type="button" className="danger" onClick={() => void remove(item)}>Excluir</button></div></article>)}</div>)}
+    {!managingGroups && editing && <ContentForm key={`${editing.kind}:${editing.id}:${editing.date}`} item={editing} groups={groups} onCancel={() => setEditing(null)} onSaved={saved} />}
+    {!managingGroups && kind === "event" && (loading ? <Empty>Carregando agenda…</Empty> : <AdminAgendaBoard key={agendaFocus || "agenda"} initialDate={agendaFocus.split("|")[0]} events={visible} onAdd={(date) => { if (!confirmLeaveEditor()) return; setSavedMessage(""); setEditing(blankItem("event", date)); }} onEdit={(item) => { if (!confirmLeaveEditor()) return; setSavedMessage(""); setEditing(item); }} />)}
+    {!managingGroups && kind !== "event" && (loading ? <Empty>Carregando conteúdo…</Empty> : !visible.length ? <section className="internal-empty-action"><h2>{items.length ? "Nenhum resultado encontrado" : "Nenhum item cadastrado"}</h2><p>{items.length ? "Tente outro termo de busca." : "Use “Adicionar” para preparar a primeira publicação desta seção. Você pode salvar como oculto antes de colocar no ar."}</p>{!items.length && <button type="button" className="primary" onClick={() => setEditing(blankItem(kind))}>Criar primeiro item</button>}</section> : <div className="content-admin-list">{visible.map((item) => <article key={item.id} className={!item.active ? "inactive" : ""}>{item.imageUrl ? <img src={item.imageUrl} alt="" style={{ objectPosition: item.imagePosition }} /> : <div className="content-admin-placeholder" aria-hidden="true">{kindLabels[item.kind].slice(0, 1)}</div>}<div><span>{item.active ? "Publicado" : "Oculto"}</span><h2>{item.title}</h2><p>{groupName(item.groupId, groups) || item.subtitle}{item.date ? ` • ${formatShortDate(item.date)}` : ""}</p></div><div><button type="button" onClick={() => { if (!confirmLeaveEditor()) return; setSavedMessage(""); setEditing(item); }}>Editar</button><button type="button" className="danger" onClick={() => void remove(item)}>Excluir</button></div></article>)}</div>)}
   </div>;
 }
 
@@ -316,7 +337,7 @@ function ContentForm({ item, groups, onCancel, onSaved }: { item: ContentItem; g
   const needsImage = ["post", "sermon", "event", "devotional", "leader", "gallery"].includes(item.kind);
   const needsAuthor = ["post", "sermon", "devotional"].includes(item.kind);
   const needsLink = ["post", "sermon"].includes(item.kind);
-  return <form ref={formRef} className={`internal-form content-editor ${item.kind === "event" ? "event-editor" : ""}`} onSubmit={submit} onChange={() => setDirty(true)} aria-busy={saving}><header><div><p>{item.id > 0 ? "Editar item" : "Novo item"}</p><h2>{kindLabels[item.kind]}</h2><span>{item.kind === "event" ? "Título e data são obrigatórios. Horário, local, descrição e foto são opcionais." : "Revise as informações e a prévia antes de publicar."}</span></div><div className="editor-state"><em>{saving ? "Gravando no site…" : dirty || pendingImage ? "Alterações não salvas" : item.id ? "Tudo salvo" : "Novo conteúdo"}</em><button type="button" onClick={cancel} disabled={saving}>Fechar</button></div></header>
+  return <form ref={formRef} className={`internal-form content-editor ${item.kind === "event" ? "event-editor" : ""}`} data-unsaved={dirty || Boolean(pendingImage)} onSubmit={submit} onChange={() => setDirty(true)} aria-busy={saving}><header><div><p>{item.id > 0 ? "Editar item" : "Novo item"}</p><h2>{kindLabels[item.kind]}</h2><span>{item.kind === "event" ? "Título e data são obrigatórios. Horário, local, descrição e foto são opcionais." : "Revise as informações e a prévia antes de publicar."}</span></div><div className="editor-state"><em>{saving ? "Gravando no site…" : dirty || pendingImage ? "Alterações não salvas" : item.id ? "Tudo salvo" : "Novo conteúdo"}</em><button type="button" onClick={cancel} disabled={saving}>Fechar</button></div></header>
     {error && <Notice type="error">{error}</Notice>}
     {item.kind === "event" && <div className="event-editor-guide"><span>1</span><div><strong>Dados principais</strong><p>Use a mesma data para cadastrar quantos eventos desejar. Eles serão organizados automaticamente pelo horário.</p></div><span>2</span><div><strong>Publicação automática</strong><p>Ao salvar como publicado, o evento entra no calendário e na fila dos cinco próximos.</p></div></div>}
     <div className="internal-form-grid"><label>{item.kind === "leader" ? "Nome da pessoa" : "Título"}<input name="title" required maxLength={160} defaultValue={item.title} placeholder={titlePlaceholder(item.kind)} /></label><label>{subtitleLabel(item.kind)}<input name="subtitle" maxLength={160} defaultValue={item.subtitle} placeholder={subtitlePlaceholder(item.kind)} /></label>
@@ -324,7 +345,7 @@ function ContentForm({ item, groups, onCancel, onSaved }: { item: ContentItem; g
     {["leader", "gallery"].includes(item.kind) && <label>Categoria ou grupo<select name="groupId" defaultValue={item.groupId ?? ""}><option value="">Sem categoria</option>{groups.filter((group) => group.active || group.id === item.groupId).map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>}
     {needsAuthor && <label>Autor ou pregador<input name="author" maxLength={120} defaultValue={item.author} placeholder="Nome de quem assina a mensagem" /></label>}
     {needsLink && <label className="wide">Link relacionado<input name="linkUrl" type="url" maxLength={500} defaultValue={item.linkUrl} placeholder={item.kind === "sermon" ? "https://youtube.com/…" : "https://… (opcional)"} /></label>}
-    {needsImage && <div className="wide"><ImageUploader value={imageUrl} previewUrl={previewUrl} pending={Boolean(pendingImage)} variant={item.kind} position={imagePosition} onPositionChange={setImagePosition} onSelected={(file, url) => { setPendingImage(file); setPreviewUrl(url); }} onRemove={() => { setPendingImage(null); setPreviewUrl(""); setImageUrl(""); }} /></div>}
+    {needsImage && <div className="wide"><ImageUploader value={imageUrl} previewUrl={previewUrl} pending={Boolean(pendingImage)} variant={item.kind} position={imagePosition} onPositionChange={(value) => { setImagePosition(value); setDirty(true); }} onSelected={(file, url) => { setPendingImage(file); setPreviewUrl(url); }} onRemove={() => { setPendingImage(null); setPreviewUrl(""); setImageUrl(""); setDirty(true); }} /></div>}
     <label>Ordem<input name="sortOrder" type="number" min="0" max="999" defaultValue={item.sortOrder} /></label><label className="internal-check"><input name="active" type="checkbox" checked={publishing} onChange={(event) => { setPublishing(event.target.checked); setDirty(true); }} /> Publicar no site</label>
     <label className="wide">{bodyLabel(item.kind)}<textarea name="body" rows={7} maxLength={2000} defaultValue={item.body} placeholder="Escreva o conteúdo que será exibido no site." /></label></div>
     <footer><span>{dirty || pendingImage ? "Há mudanças aguardando salvamento. Atalho: Ctrl + S." : "Nenhuma alteração pendente."}</span><div><button type="button" onClick={cancel} disabled={saving}>Cancelar</button><button type="submit" className="primary" disabled={saving}>{saving ? "Salvando com segurança…" : publishing ? "Salvar e publicar" : "Salvar como oculto"}</button></div></footer>
@@ -405,7 +426,7 @@ function GroupManager({ groups, items, onChanged }: { groups: ContentGroup[]; it
   return <section className="group-manager internal-stack">
     <div className="group-manager-head"><div><p className="settings-kicker">Categorias compartilhadas</p><h2>Organize liderança e galeria</h2><p>Crie grupos como “Ministério Pastoral”. A capa pode ser uma foto própria ou, se ficar vazia, a primeira foto publicada no grupo.</p></div><button type="button" className="primary" onClick={() => setEditing(blankGroup())}>+ Nova categoria</button></div>
     {error && <Notice type="error">{error}</Notice>}
-    {editing && <GroupForm group={editing} onCancel={() => setEditing(null)} onSaved={async () => { setEditing(null); await onChanged(); }} />}
+    {editing && <GroupForm key={`${editing.id}:${editing.updatedAt}`} group={editing} onCancel={() => setEditing(null)} onSaved={async () => { setEditing(null); await onChanged(); }} />}
     {!groups.length ? <Empty>Nenhuma categoria criada. Comece pelo Ministério Pastoral ou pelo primeiro álbum da galeria.</Empty> : <div className="group-admin-grid">{groups.map((group) => {
       const fallback = items.find((item) => item.groupId === group.id && item.imageUrl);
       const cover = group.coverImageUrl || fallback?.imageUrl || "";

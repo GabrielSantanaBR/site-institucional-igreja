@@ -1,6 +1,9 @@
 import { ensureDatabase, getD1 } from "../db/runtime";
 
 export const siteSettingsDefaults = {
+  adBottomEnabled: "false",
+  adSideEnabled: "false",
+  adInlineEnabled: "false",
   heroEyebrow: "Bem-vindo à Primeira Igreja Batista Renovada em Guadalupe",
   heroTitle: "Uma igreja para pertencer.\nUma fé para viver.",
   heroText: "Conheça a comunidade, acompanhe a programação publicada pela igreja e envie seu pedido de oração com privacidade.",
@@ -25,7 +28,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
 export type SiteSettingsSnapshot = { settings: SiteSettings; revision: string };
 
-export async function getSiteSettingsSnapshot(): Promise<SiteSettingsSnapshot> {
+export async function getSiteSettingsSnapshot(strict = false): Promise<SiteSettingsSnapshot> {
   try {
     await ensureDatabase();
     const { results } = await getD1().prepare(
@@ -38,12 +41,13 @@ export async function getSiteSettingsSnapshot(): Promise<SiteSettingsSnapshot> {
         settings[key] = key === "instagramUrl" || key === "facebookUrl" ? safePublicUrl(row.value, siteSettingsDefaults[key]) : row.value;
       }
     }
-    return { settings, revision: await settingsRevision(results) };
+    return { settings, revision: results.find((row) => row.key === "_revision")?.value || await settingsRevision(results) };
   } catch (error) {
     console.error(JSON.stringify({
       event: "site_settings_read_failed",
       error: error instanceof Error ? error.message : String(error),
     }));
+    if (strict) throw error;
     return { settings: { ...siteSettingsDefaults }, revision: "defaults" };
   }
 }
@@ -57,7 +61,7 @@ async function settingsRevision(rows: { key: string; value: string; updatedAt: s
 export function safePublicUrl(value: string, fallback = "") {
   try {
     const url = new URL(value.trim());
-    return url.protocol === "https:" ? url.toString() : fallback;
+    return url.protocol === "https:" && !url.username && !url.password ? url.toString() : fallback;
   } catch {
     return fallback;
   }
