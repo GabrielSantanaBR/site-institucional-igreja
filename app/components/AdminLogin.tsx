@@ -35,7 +35,7 @@ export function AdminLogin() {
       <h1 id="admin-login-title">Atualize o site com segurança.</h1>
       <p>Entre para publicar agenda, sermões, devocionais, postagens, liderança e fotos.</p>
       <form onSubmit={submit}>
-        <label>Usuário<input name="username" autoComplete="username" required maxLength={80} autoFocus /></label>
+        <label>Usuário<input name="username" autoComplete="username" required maxLength={254} autoFocus /></label>
         <label>Senha<div className="password-field"><input name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required maxLength={160} /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? "Ocultar" : "Mostrar"}</button></div></label>
         {error && <div className="admin-login-error" role="alert">{error}</div>}
         <button className="admin-login-submit" type="submit" disabled={loading}>{loading ? "Verificando…" : "Entrar no painel"}</button>

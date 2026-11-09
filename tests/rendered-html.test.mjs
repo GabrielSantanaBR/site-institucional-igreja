@@ -118,7 +118,7 @@ test("requires same-origin JSON for browser mutations", async () => {
   const security = await readFile(new URL("../lib/request-security.ts", import.meta.url), "utf8");
   assert.match(security, /\["same-origin", "none"\]/);
   assert.doesNotMatch(security, /"same-site"/);
-  assert.match(security, /new URL\(origin\)\.origin !== new URL\(request\.url\)\.origin/);
+  assert.match(security, /new URL\(origin\)\.origin !== expectedOrigin/);
   assert.match(security, /contentType !== "application\/json"/);
 });
 

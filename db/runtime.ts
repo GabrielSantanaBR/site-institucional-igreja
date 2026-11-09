@@ -1,3 +1,4 @@
+import { getNodeEnvironment } from "./node-storage";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 export interface D1PreparedStatement {
@@ -68,7 +69,7 @@ export function runWithRuntimeScope<T>(environment: RuntimeEnvironment, executio
 }
 
 export function getRuntimeEnvironment(): RuntimeEnvironment {
-  return runtimeScope.getStore()?.environment ?? {};
+  return runtimeScope.getStore()?.environment ?? (process.env.APP_RUNTIME === "node" ? getNodeEnvironment() : {});
 }
 
 export function scheduleBackground(promise: Promise<unknown>) {

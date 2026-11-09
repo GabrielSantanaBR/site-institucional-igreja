@@ -149,3 +149,44 @@ quando o formulário está desatualizado. O painel exige nova leitura após conf
 Os testes funcionais substituem apenas a identidade e o binding do banco. Eles
 executam as validações reais da API e o SQL das migrações. Não substituem um teste
 com credenciais e armazenamento na hospedagem publicada.
+
+## Instalação independente no Railway
+
+A aplicação também roda em Next.js nativo sobre Node 24, sem gateway de identidade
+ChatGPT. O Dockerfile compila `npm run build:railway` e inicia o servidor standalone.
+Configure um volume persistente em `/data` e mantenha **uma réplica**. Não remova o
+volume: ele contém `pibrg.sqlite`, suas cópias e `media/`. Este desenho não permite
+escalar a aplicação horizontalmente; para isso, migre o banco e os arquivos para
+serviços compartilhados antes de adicionar réplicas.
+
+Variáveis obrigatórias: `APP_RUNTIME=node`, `DATA_DIR=/data`, `ADMIN_USERNAME`,
+`ADMIN_PASSWORD` (16 caracteres ou mais), `ADMIN_SESSION_SECRET` (32 ou mais),
+`IP_HASH_SALT`, `PRAYER_ENCRYPTION_KEY` (32 bytes em base64), `PUBLIC_SITE_URL` e
+`PORT=3000`. Defina `SITE_STAGE=staging` enquanto a instalação for de testes.
+As chaves permanecem apenas nas variáveis do Railway. Credenciais de contas da equipe
+são hashes scrypt; exclusão, bloqueio e troca de senha revogam os acessos anteriores.
+Cabeçalhos de identidade do ChatGPT são ignorados fora do Sites.
+
+As migrações são aplicadas uma vez no volume ao abrir o banco, com hash de integridade
+e transações. As fotos são gravadas atomicamente em diretório privado e servidas apenas
+pelo endpoint de mídia. O healthcheck `/api/health` testa a leitura do banco.
+Antes de cada reinício e a cada 24 horas, são criados snapshots consistentes do SQLite,
+com retenção dos sete mais recentes. São cópias no mesmo volume: protegem contra erros
+operacionais, mas não substituem backups externos nem um plano de recuperação do volume.
+
+E-mail é opcional para armazenamento: configure `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`,
+`PRAYER_NOTIFICATION_EMAIL` e `CONTACT_NOTIFICATION_EMAIL` para ativar notificações.
+Mensagens continuam salvas no painel quando o envio de e-mail não está configurado.
+
+### Testes e recuperação
+
+- `npm run build:railway` e `node scripts/qa-railway.mjs --local`: testes ponta a ponta
+  HTTP com credenciais e dados temporários, sem acessar bancos existentes.
+- `scripts/qa-railway.mjs` também aceita JSON `{base,username,password}` por stdin
+  para testes na instalação dedicada. Não use credenciais em argumentos de shell.
+- `scripts/recover-public.mjs` extrai somente objetos JSON presentes em capturas HTML
+  públicas de Vinext, sem executar código vindo do site. Não recupera dados privados.
+
+O Worker `pibrg-guadalupe` existente é um proxy para o Site antigo. Ele não precisa
+ser alterado durante a validação da instalação Railway. Dados privados, usuários,
+configurações ocultas e imagens não públicas não são migrados automaticamente do Site.

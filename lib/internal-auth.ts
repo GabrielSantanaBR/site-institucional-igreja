@@ -27,6 +27,14 @@ export function can(identity: AdminIdentity, permission: Permission) {
 export async function getAdminIdentity(): Promise<AdminIdentity | null> {
   const cookieStore = await cookies();
   const panelSession = await verifyAdminSession(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
+  if (panelSession && process.env.APP_RUNTIME === "node" && panelSession.username !== getRuntimeEnvironment().ADMIN_USERNAME?.trim().toUpperCase()) {
+    const user = await getD1().prepare(`SELECT u.email, u.name, u.role, c.password_hash AS hash FROM admin_users u JOIN local_credentials c ON c.email = u.email WHERE u.email = ? AND u.active = 1`).bind(panelSession.username.toLowerCase()).first<{ email: string; name: string; role: AdminRole; hash: string }>();
+    if (!user || !roles.includes(user.role)) return null;
+    const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(user.hash)));
+    const version = Array.from(hash, byte => byte.toString(16).padStart(2, "0")).join("");
+    if (version !== panelSession.credentialVersion) return null;
+    return { email: user.email, name: user.name, role: user.role };
+  }
   if (panelSession) {
     return { email: "painel@pibrg.local", name: panelSession.name, role: panelSession.role };
   }

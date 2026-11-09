@@ -9,7 +9,9 @@ export function rejectCrossSiteMutation(request: Request) {
   const origin = request.headers.get("origin");
   if (origin) {
     try {
-      if (new URL(origin).origin !== new URL(request.url).origin) {
+      const expectedOrigin = process.env.APP_RUNTIME === "node" && process.env.PUBLIC_SITE_URL
+        ? new URL(process.env.PUBLIC_SITE_URL).origin : new URL(request.url).origin;
+      if (new URL(origin).origin !== expectedOrigin) {
         return Response.json({ error: "Origem da solicitação não autorizada." }, { status: 403 });
       }
     } catch {

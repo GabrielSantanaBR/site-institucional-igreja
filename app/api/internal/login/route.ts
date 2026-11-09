@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const rejected = rejectCrossSiteMutation(request);
   if (rejected) return rejected;
   const payload = await readJsonObject(request, 8 * 1024) ?? {};
-  const username = typeof payload.username === "string" ? payload.username.slice(0, 80) : "";
+  const username = typeof payload.username === "string" ? payload.username.slice(0, 254) : "";
   const password = typeof payload.password === "string" ? payload.password.slice(0, 160) : "";
   const ipKey = await requestKey(request);
 

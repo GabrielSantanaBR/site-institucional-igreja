@@ -1,3 +1,4 @@
+import { passwordHash } from "../../../../lib/local-users";
 import { ensureDatabase, getD1, getRuntimeEnvironment } from "../../../../db/runtime";
 import { normalizeEmail, requireApiPermission, roles, type AdminRole } from "../../../../lib/internal-auth";
 import { rejectCrossSiteMutation, readJsonObject } from "../../../../lib/request-security";
@@ -44,11 +45,20 @@ export async function POST(request: Request) {
       if (email === normalizeEmail(getRuntimeEnvironment().SUPER_ADMIN_EMAIL ?? "")) {
         return noStore({ error: "O proprietário principal não pode ser alterado aqui." }, 400);
       }
+      const password = typeof payload.password === "string" ? payload.password : "";
+      const credentialStatements = [];
+      if (process.env.APP_RUNTIME === "node") {
+        const existing = await db.prepare("SELECT email FROM local_credentials WHERE email = ?").bind(email).first();
+        if ((!existing || password) && (password.length < 16 || password.length > 160)) return noStore({ error: "Informe uma senha com 16 a 160 caracteres para este acesso." }, 400);
+        if (password) credentialStatements.push(db.prepare(`INSERT INTO local_credentials (email, password_hash) VALUES (?, ?)
+          ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash, updated_at = CURRENT_TIMESTAMP`).bind(email, await passwordHash(password)));
+      }
       await db.batch([
         db.prepare(`INSERT INTO admin_users (email, name, role, active, created_by)
           VALUES (?, ?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = excluded.name,
           role = excluded.role, active = excluded.active, updated_at = CURRENT_TIMESTAMP`)
           .bind(email, name, role, active ? 1 : 0, auth.identity.email),
+        ...credentialStatements,
         userAudit(db, auth.identity.email, "save", email, { role, active }),
       ]);
       return noStore({ ok: true });
