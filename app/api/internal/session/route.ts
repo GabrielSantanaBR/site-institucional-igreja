@@ -11,6 +11,7 @@ export async function GET() {
       contacts: can(identity, "contacts"),
       users: can(identity, "users"),
       audit: can(identity, "audit"),
+      analytics: can(identity, "analytics"),
     },
   }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -22,9 +22,9 @@ export function GenericAds({ settings, pathname }: { settings: SiteSettings; pat
   const protectedPage = pathname.startsWith("/pedido-de-oracao") || pathname.startsWith("/fale-conosco");
   return <>{adFormats.map(({ key, id, title }) => {
     if (!adIsEnabled(settings[key]) || (id === "bottom" && (closed || storedClosed || protectedPage))) return null;
-    return <aside key={id} className={`generic-ad-slot generic-ad-slot-${id}`} aria-label={`Anúncio de exemplo: ${title}`}>
+    return <aside key={id} className={`generic-ad-slot generic-ad-slot-${id}`} data-analytics-ad={id} aria-label={`Anúncio de exemplo: ${title}`}>
       <GenericAdSample format={id} />
-      {id === "bottom" && <button type="button" className="generic-ad-close" aria-label="Fechar anúncio inferior" onClick={close}>×</button>}
+      {id === "bottom" && <button type="button" className="generic-ad-close" data-analytics-close="bottom" aria-label="Fechar anúncio inferior" onClick={close}>×</button>}
     </aside>;
   })}</>;
 }

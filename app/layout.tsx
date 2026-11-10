@@ -4,6 +4,7 @@ import { SiteShell } from "./components/SiteShell";
 import { getSiteSettings } from "../lib/site-settings";
 import { getMetadataBase, getPublicSiteOrigin, getPublicSiteUrl } from "../lib/site-url";
 import "./globals.css";
+import { analyticsIsEnabled } from "../lib/analytics";
 
 const geistSans = localFont({ src: "../.vinext/fonts/geist-8ac0455e797f/geist-98bbbccb.woff2", variable: "--font-geist-sans", weight: "100 900", display: "swap" });
 const geistMono = localFont({ src: "../.vinext/fonts/geist-mono-00e989178794/geist-mono-013b2f2f.woff2", variable: "--font-geist-mono", weight: "100 900", display: "swap" });
@@ -42,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const settings = await getSiteSettings();
+  const [settings, analyticsEnabled] = await Promise.all([getSiteSettings(), analyticsIsEnabled()]);
   const origin = getPublicSiteOrigin();
   const organization = {
     "@context": "https://schema.org",
@@ -77,6 +78,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return <html lang="pt-BR"><body className={`${geistSans.variable} ${geistMono.variable}`}>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
-    <SiteShell settings={settings}>{children}</SiteShell>
+    <SiteShell settings={settings} analyticsEnabled={analyticsEnabled}>{children}</SiteShell>
   </body></html>;
 }

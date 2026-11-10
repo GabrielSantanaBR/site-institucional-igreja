@@ -100,3 +100,36 @@ Mensagens continuam salvas no painel quando o envio de e-mail não está configu
 O Worker `pibrg-guadalupe` existente é um proxy para o Site antigo. Ele não precisa
 ser alterado durante a validação da instalação Railway. Dados privados, usuários,
 configurações ocultas e imagens não públicas não são migrados automaticamente do Site.
+
+## Estatísticas próprias
+
+**Painel → Estatísticas**, disponível para proprietário e administrador, mostra
+visualizações, páginas, caminhos entre páginas, categorias de origem, dispositivos,
+horários, cliques, anúncios genéricos e categorias de erro. Os filtros são 7, 30 e
+90 dias. As contagens começam nesta versão; não representam pessoas únicas nem
+recuperam visitas anteriores. Bloqueadores e preferências de privacidade podem
+reduzir a cobertura.
+
+A coleta inicia ativa e pode ser pausada no painel, com revisão para impedir que
+uma janela sobrescreva a outra. Pausar impede novas gravações imediatamente no
+servidor. Ativar passa a instrumentar novas páginas carregadas. Alterações de
+coleta entram no histórico administrativo.
+
+Não há serviço externo, cookie de identificação, identificador de visitante,
+fingerprint, gravação de sessão, nome, e-mail, mensagem, URL com parâmetros ou IP
+completo na base de estatísticas. O navegador só envia páginas e destinos de uma
+lista fixa. Fluxos são contagens de pares de páginas, sem histórico individual.
+Administração, conversa e oração são excluídas no cliente e rejeitadas no servidor.
+Requisições com cookie administrativo, DNT ou GPC são ignoradas. O limite contra
+abuso usa hash protegido do IP só em memória, com validade de um minuto, e limite
+de 2048 chaves. A base contém apenas buckets agregados, nunca um evento por usuário.
+
+A migração `0006_analytics.sql` adiciona tabelas separadas sem alterar conteúdo,
+mensagens ou contas existentes. Os buckets têm retenção de 90 dias, com limpeza no
+primeiro evento/relatório do dia. Snapshots existentes podem reter contagens antigas
+até saírem da retenção dos sete arquivos. `/privacidade` explica a coleta e permite
+optar por não participar naquele navegador. Essa escolha usa apenas uma preferência
+local e também é aplicada à fila de eventos ainda não enviada.
+
+`node --test tests/analytics-*.test.mjs` verifica a coleta contra SQLite real,
+exclusões, permissões, revisões, pausa/retomada, retenção e controles da interface.

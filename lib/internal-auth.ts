@@ -5,7 +5,7 @@ import { ADMIN_COOKIE_NAME, verifyAdminSession } from "./admin-session";
 
 export const roles = ["owner", "admin", "secretary", "intercessor"] as const;
 export type AdminRole = (typeof roles)[number];
-export type Permission = "content" | "prayers" | "contacts" | "users" | "audit";
+export type Permission = "content" | "prayers" | "contacts" | "users" | "audit" | "analytics";
 
 export type AdminIdentity = {
   email: string;
@@ -14,8 +14,8 @@ export type AdminIdentity = {
 };
 
 const permissions: Record<AdminRole, Permission[]> = {
-  owner: ["content", "prayers", "contacts", "users", "audit"],
-  admin: ["content", "prayers", "contacts", "audit"],
+  owner: ["content", "prayers", "contacts", "users", "audit", "analytics"],
+  admin: ["content", "prayers", "contacts", "audit", "analytics"],
   secretary: ["content", "contacts"],
   intercessor: ["prayers"],
 };

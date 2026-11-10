@@ -7,8 +7,9 @@ import type { ContentGroup, ContentItem, ContentKind } from "../../lib/site-cont
 import type { SiteSettings } from "../../lib/site-settings";
 import { AdSettings } from "./AdSettings";
 import { ContactInbox } from "./ContactInbox";
+import { AnalyticsDashboard } from "./AnalyticsDashboard";
 
-type Permissions = { content: boolean; prayers: boolean; contacts: boolean; users: boolean; audit: boolean };
+type Permissions = { content: boolean; prayers: boolean; contacts: boolean; users: boolean; audit: boolean; analytics: boolean };
 type Prayer = { id: number; name: string; contact: string; message: string; subject: string; status: string; submittedAt: string; updatedAt: string; updatedBy: string | null };
 type AdminUser = { id: number; email: string; name: string; role: string; active: boolean; protected?: boolean };
 type AuditLog = { id: number; actorEmail: string; action: string; entityType: string; entityId: string; createdAt: string };
@@ -25,6 +26,7 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
     contacts: ["owner", "admin", "secretary"].includes(identity.role),
     users: identity.role === "owner",
     audit: ["owner", "admin"].includes(identity.role),
+    analytics: ["owner", "admin"].includes(identity.role),
   };
   const tabs = useMemo(() => [
     ["overview", "Visão geral", true],
@@ -32,9 +34,10 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
     ["prayers", "Pedidos de oração", permissions.prayers],
     ["settings", "Informações gerais", permissions.content],
     ["content", "Conteúdo do site", permissions.content],
+    ["analytics", "Estatísticas", permissions.analytics],
     ["users", "Acessos", permissions.users],
     ["audit", "Atividades", permissions.audit],
-  ].filter((tab) => tab[2]) as [string, string, boolean][], [permissions.audit, permissions.contacts, permissions.content, permissions.prayers, permissions.users]);
+  ].filter((tab) => tab[2]) as [string, string, boolean][], [permissions.analytics, permissions.audit, permissions.contacts, permissions.content, permissions.prayers, permissions.users]);
   const [active, setActive] = useState("overview");
   const [sessionExpired, setSessionExpired] = useState(false);
   useEffect(() => {
@@ -58,6 +61,7 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
       {active === "prayers" && <PrayerManager canDelete={["owner", "admin"].includes(identity.role)} />}
       {active === "settings" && <SettingsManager />}
       {active === "content" && <ContentManager />}
+      {active === "analytics" && <AnalyticsDashboard />}
       {active === "users" && <UserManager />}
       {active === "audit" && <AuditManager />}
     </section>
@@ -70,6 +74,7 @@ function Overview({ identity, permissions, onNavigate }: { identity: AdminIdenti
     { key: "prayers", title: "Pedidos de oração", text: "Leia, acompanhe e arquive pedidos confidenciais.", allowed: permissions.prayers },
     { key: "settings", title: "Informações gerais", text: "Atualize apresentação, versículo, endereço e redes sociais.", allowed: permissions.content },
     { key: "content", title: "Conteúdo público", text: "Publique postagens, sermões, agenda, devocionais, liderança e fotos.", allowed: permissions.content },
+    { key: "analytics", title: "Estatísticas", text: "Acompanhe páginas, navegação, cliques e anúncios com dados agregados.", allowed: permissions.analytics },
     { key: "users", title: "Níveis de acesso", text: "Cadastre a secretaria e a equipe de intercessão.", allowed: permissions.users },
     { key: "audit", title: "Histórico de atividades", text: "Acompanhe alterações importantes realizadas no painel.", allowed: permissions.audit },
   ];
