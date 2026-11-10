@@ -21,6 +21,8 @@ const render=async(pathname='/',enabled=true)=>act(async()=>root.render(React.cr
 try{
  await test('tracker counts SPA navigation once and sends only allowlisted destinations without query strings',async()=>{
   await render();await act(async()=>{document.querySelector('#public').click();document.querySelector('#private').click();document.querySelector('#social').click();});
+  const conversation=document.createElement('div');conversation.className='contact-hub is-open';document.body.append(conversation);
+  await act(async()=>document.querySelector('#public').click());conversation.remove();
   await render('/agenda');
   const events=(await flush()).flatMap(batch=>batch.events);
   assert.equal(events.filter(item=>item.event==='page_view'&&item.page==='/').length,1);

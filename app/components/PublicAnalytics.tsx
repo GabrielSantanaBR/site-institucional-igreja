@@ -28,7 +28,7 @@ export function PublicAnalytics({ pathname, enabled }: { pathname: string; enabl
       void fetch("/api/analytics", { method: "POST", headers: { "Content-Type": "application/json" }, body, credentials: "same-origin", keepalive: true }).catch(() => {});
     }
     function send(event: AnalyticsEvent["event"], target = "", from = "") {
-      if (analyticsOptedOut()) return;
+      if (analyticsOptedOut() || document.querySelector(".contact-hub.is-open")) return;
       if (event === "error" || event === "ad_impression") {
         const key = event + target; if (emitted.has(key)) return; emitted.add(key);
       }
