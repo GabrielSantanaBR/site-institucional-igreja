@@ -1,0 +1,10 @@
+import { snapshotDatabase } from "./backup-railway.mjs";
+import { mkdirSync } from 'node:fs';
+const required = ['DATA_DIR','ADMIN_USERNAME','ADMIN_PASSWORD','ADMIN_SESSION_SECRET','IP_HASH_SALT','PRAYER_ENCRYPTION_KEY','PUBLIC_SITE_URL'];
+for (const key of required) if (!process.env[key]) throw Error(`Required variable missing: ${key}`);
+if (Buffer.from(process.env.PRAYER_ENCRYPTION_KEY, 'base64').length !== 32) throw Error('PRAYER_ENCRYPTION_KEY must contain 32 bytes in base64');
+if (process.env.ADMIN_SESSION_SECRET.length < 32 || process.env.ADMIN_PASSWORD.length < 16) throw Error('Admin password/session secret too short');
+mkdirSync(process.env.DATA_DIR, {recursive:true,mode:0o700});
+snapshotDatabase(process.env.DATA_DIR);
+setInterval(() => { try { snapshotDatabase(process.env.DATA_DIR); } catch { console.error('Scheduled database backup failed'); } }, 24 * 60 * 60 * 1000).unref();
+await import('../server.js');

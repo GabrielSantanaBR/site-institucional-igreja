@@ -1,7 +1,7 @@
 import { ensureDatabase, getD1, scheduleBackground } from "../../../db/runtime";
 import { encryptPrayer, hashIp } from "../../../lib/prayer-security";
 import { notifyPrayerByEmail } from "../../../lib/prayer-notification";
-import { rejectCrossSiteMutation, readJsonObject } from "../../../lib/request-security";
+import { clientIp, rejectCrossSiteMutation, readJsonObject } from "../../../lib/request-security";
 
 const allowedSubjects = ["Família", "Saúde", "Trabalho e estudos", "Vida espiritual", "Outro"];
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     }
 
     await ensureDatabase();
-    const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const ip = clientIp(request);
     const ipHash = await hashIp(ip);
     if (!(await allowSubmission(ipHash))) {
       return Response.json({ error: "Muitos pedidos foram enviados deste dispositivo. Tente novamente mais tarde." }, { status: 429 });

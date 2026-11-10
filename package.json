@@ -7,14 +7,17 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
-    "build": "bash scripts/build-verified.sh",
-    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
+    "dev": "APP_RUNTIME=node DATA_DIR=./data next dev --webpack",
+    "build": "npm run build:railway",
+    "start": "next start --hostname 0.0.0.0",
     "test": "npm run build && node --test tests/*.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
-    "typecheck": "tsc --noEmit --incremental false"
+    "typecheck": "tsc --noEmit --incremental false",
+    "build:railway": "next build --webpack",
+    "start:railway": "node .next/standalone/server.js",
+    "build:cloudflare": "bash scripts/build-verified.sh"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

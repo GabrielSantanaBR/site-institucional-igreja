@@ -63,10 +63,6 @@ export async function POST(request: Request) {
   }
 }
 
-export function isSiteSettingKey(value: string): value is SiteSettingKey {
-  return siteSettingKeys.includes(value as SiteSettingKey);
-}
-
 function logSettingsFailure(event: string, error: unknown) {
   console.error(JSON.stringify({ event, error: error instanceof Error ? error.message : String(error) }));
 }

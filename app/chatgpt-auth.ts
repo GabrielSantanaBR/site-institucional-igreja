@@ -17,6 +17,8 @@ const SIGN_OUT_PATH = "/signout-with-chatgpt";
 const CALLBACK_PATH = "/callback";
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
+  // Outside Sites there is no trusted identity gateway: ignore spoofable headers.
+  if (process.env.APP_RUNTIME === "node") return null;
   const requestHeaders = await headers();
   const email = requestHeaders.get(USER_EMAIL_HEADER);
   if (!email) return null;

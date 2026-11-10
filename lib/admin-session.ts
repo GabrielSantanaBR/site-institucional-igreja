@@ -1,4 +1,5 @@
-import { getRuntimeEnvironment } from "../db/runtime";
+import { passwordMatches } from "./local-users";
+import { getD1, getRuntimeEnvironment } from "../db/runtime";
 
 export const ADMIN_COOKIE_NAME = "pibrg_admin_session";
 export const ADMIN_SESSION_SECONDS = 60 * 60 * 8;
@@ -6,7 +7,8 @@ export const ADMIN_SESSION_SECONDS = 60 * 60 * 8;
 type SessionPayload = {
   username: string;
   name: string;
-  role: "owner";
+  role: "owner" | "admin" | "secretary" | "intercessor";
+  credentialVersion?: string;
   expiresAt: number;
 };
 
@@ -55,6 +57,12 @@ export async function validAdminCredentials(username: string, password: string) 
   const expectedUser = env.ADMIN_USERNAME || "";
   const expectedPassword = env.ADMIN_PASSWORD || "";
   if (!expectedUser || !expectedPassword) return false;
+  if (process.env.APP_RUNTIME === "node" && username.trim().toUpperCase() !== expectedUser.trim().toUpperCase()) {
+    const user = await getD1().prepare(`SELECT c.password_hash AS hash FROM local_credentials c
+      JOIN admin_users u ON u.email = c.email WHERE u.email = ? AND u.active = 1`).bind(username.trim().toLowerCase()).first<{ hash: string }>();
+    if (!user) { await passwordMatches(password, "scrypt:" + "0".repeat(32) + ":" + "0".repeat(128)); return false; }
+    return passwordMatches(password, user.hash);
+  }
   const [receivedUser, storedUser, receivedPassword, storedPassword] = await Promise.all([
     digest(username.trim().toUpperCase()),
     digest(expectedUser.trim().toUpperCase()),
@@ -71,6 +79,11 @@ export async function createAdminSession(username: string) {
     role: "owner",
     expiresAt: Date.now() + ADMIN_SESSION_SECONDS * 1000,
   };
+  if (process.env.APP_RUNTIME === "node" && payload.username !== getRuntimeEnvironment().ADMIN_USERNAME?.trim().toUpperCase()) {
+    const user = await getD1().prepare(`SELECT u.name, u.role, c.password_hash AS hash FROM admin_users u JOIN local_credentials c ON c.email = u.email WHERE u.email = ? AND u.active = 1`).bind(username.trim().toLowerCase()).first<{ name: string; role: SessionPayload["role"]; hash: string }>();
+    if (!user || !["admin", "secretary", "intercessor"].includes(user.role)) throw new Error("Acesso inválido.");
+    payload.name = user.name; payload.role = user.role; payload.credentialVersion = await digest(user.hash);
+  }
   const encoded = encode(JSON.stringify(payload));
   const signature = await sign(encoded);
   if (!signature) throw new Error("A sessão administrativa ainda não foi configurada.");
@@ -85,7 +98,7 @@ export async function verifyAdminSession(token: string | undefined): Promise<Ses
   if (!expectedSignature || !sameValue(receivedSignature, expectedSignature)) return null;
   try {
     const payload = JSON.parse(decode(encoded)) as SessionPayload;
-    if (payload.role !== "owner"
+    if (!["owner", "admin", "secretary", "intercessor"].includes(payload.role)
       || typeof payload.username !== "string" || !payload.username
       || typeof payload.name !== "string" || !payload.name
       || typeof payload.expiresAt !== "number" || !Number.isFinite(payload.expiresAt)

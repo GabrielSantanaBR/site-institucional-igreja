@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { SiteShell } from "./components/SiteShell";
 import { getSiteSettings } from "../lib/site-settings";
 import { getMetadataBase, getPublicSiteOrigin, getPublicSiteUrl } from "../lib/site-url";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const geistSans = localFont({ src: "../.vinext/fonts/geist-8ac0455e797f/geist-98bbbccb.woff2", variable: "--font-geist-sans", weight: "100 900", display: "swap" });
+const geistMono = localFont({ src: "../.vinext/fonts/geist-mono-00e989178794/geist-mono-013b2f2f.woff2", variable: "--font-geist-mono", weight: "100 900", display: "swap" });
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +20,9 @@ export async function generateMetadata(): Promise<Metadata> {
     category: "religion",
     icons: { icon: "/images/pibrg-logo.png", shortcut: "/images/pibrg-logo.png", apple: "/images/pibrg-logo.png" },
     robots: {
-      index: true,
-      follow: true,
-      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+      index: process.env.SITE_STAGE !== "staging",
+      follow: process.env.SITE_STAGE !== "staging",
+      googleBot: { index: process.env.SITE_STAGE !== "staging", follow: process.env.SITE_STAGE !== "staging", "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
     },
     openGraph: {
       title: "Primeira Igreja Batista Renovada em Guadalupe",

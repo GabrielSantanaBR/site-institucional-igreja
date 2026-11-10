@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS local_credentials (
+  email TEXT PRIMARY KEY NOT NULL REFERENCES admin_users(email) ON DELETE CASCADE,
+  password_hash TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
