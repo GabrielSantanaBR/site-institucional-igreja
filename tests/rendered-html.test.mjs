@@ -157,14 +157,14 @@ test("publishes a crawlable public map without exposing internal routes", async 
   assert.match(manifest, /short_name: "PIBRG"/);
 });
 
-test("keeps the legacy internal alias hidden and logout protected by POST", async () => {
+test("routes the internal alias to the authenticated editor and protects logout by POST", async () => {
   const [legacyRoute, logout, dashboard] = await Promise.all([
     readFile(new URL("../app/acesso-interno/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/internal/logout/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/components/InternalDashboard.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(legacyRoute, /notFound\(\)/);
-  assert.doesNotMatch(legacyRoute, /redirect\(/);
+  assert.match(legacyRoute, /redirect\("\/alteracao-de-dados"\)/);
+  assert.doesNotMatch(legacyRoute, /notFound\(/);
   assert.match(logout, /export async function POST/);
   assert.match(logout, /rejectCrossSiteMutation/);
   assert.match(logout, /export async function GET/);

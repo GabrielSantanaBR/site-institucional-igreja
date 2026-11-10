@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { SiteSettings } from "../../lib/site-settings";
 import { GenericAds } from "./GenericAds";
 import { ContactHub } from "./ContactChat";
+import { startScrollReveal } from "../../lib/scroll-reveal";
 
 const nav = [["Início", "/"], ["Nossa Igreja", "/nossa-igreja"], ["Liderança", "/lideranca"], ["Agenda", "/agenda"], ["Sermões", "/sermoes"], ["Postagens", "/postagens"], ["Galeria", "/galeria"], ["Devocionais", "/devocionais"]];
 
@@ -25,31 +26,8 @@ export function SiteShell({ children, settings }: { children: ReactNode; setting
     return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", close); };
   }, [open]);
   useEffect(() => {
-    if (pathname.startsWith("/acesso-interno") || pathname.startsWith("/alteracao-de-dados") || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const selector = [
-      "main .section-heading", "main .welcome-grid", "main .service-card", "main .news-card",
-      "main .public-post-grid > article", "main .upcoming-event-cards > article", "main .leadership-group",
-      "main .gallery-albums > button", "main .gallery-item", "main .sermons-public-grid > article",
-    ].join(",");
-    const frame = window.requestAnimationFrame(() => {
-      const elements = Array.from(document.querySelectorAll<HTMLElement>(selector));
-      const observer = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const element = entry.target as HTMLElement;
-          element.classList.add("is-revealed");
-          observer.unobserve(element);
-          window.setTimeout(() => element.classList.remove("scroll-reveal", "is-revealed"), 700);
-        }
-      }, { rootMargin: "0px 0px -8%", threshold: 0.08 });
-      elements.forEach((element, index) => {
-        element.classList.add("scroll-reveal");
-        element.style.setProperty("--reveal-delay", `${Math.min(index % 4, 3) * 55}ms`);
-        observer.observe(element);
-      });
-      window.setTimeout(() => observer.disconnect(), 12_000);
-    });
-    return () => window.cancelAnimationFrame(frame);
+    if (pathname.startsWith("/acesso-interno") || pathname.startsWith("/alteracao-de-dados") || window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
+    return startScrollReveal();
   }, [pathname]);
   if (pathname.startsWith("/acesso-interno") || pathname.startsWith("/alteracao-de-dados")) return <>{children}</>;
   return <>

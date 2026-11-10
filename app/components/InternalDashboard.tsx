@@ -36,6 +36,12 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
     ["audit", "Atividades", permissions.audit],
   ].filter((tab) => tab[2]) as [string, string, boolean][], [permissions.audit, permissions.contacts, permissions.content, permissions.prayers, permissions.users]);
   const [active, setActive] = useState("overview");
+  const [sessionExpired, setSessionExpired] = useState(false);
+  useEffect(() => {
+    const expired = () => setSessionExpired(true);
+    window.addEventListener("pibrg-session-expired", expired);
+    return () => window.removeEventListener("pibrg-session-expired", expired);
+  }, []);
 
   function navigate(tab: string) { if (tab === active || confirmLeaveEditor()) setActive(tab); }
   return <main className="internal-app">
@@ -46,6 +52,7 @@ export function InternalDashboard({ identity, signOutPath }: { identity: AdminId
     </aside>
     <section className="internal-main">
       <header className="internal-topbar"><div><p>Área protegida</p><h1>{tabs.find(([key]) => key === active)?.[1]}</h1></div><a href="/" target="_blank" rel="noreferrer">Visualizar site ↗</a></header>
+      {sessionExpired && <div className="internal-notice error" role="alert">Sua sessão expirou. Entre novamente para continuar. <button type="button" onClick={() => { if (confirmLeaveEditor()) window.location.assign("/alteracao-de-dados"); }}>Entrar novamente</button></div>}
       {active === "overview" && <Overview identity={identity} permissions={permissions} onNavigate={navigate} />}
       {active === "contacts" && <ContactInbox canDelete={["owner", "admin"].includes(identity.role)} />}
       {active === "prayers" && <PrayerManager canDelete={["owner", "admin"].includes(identity.role)} />}
@@ -517,6 +524,10 @@ async function api<T = { ok: boolean }>(url: string, init?: RequestInit): Promis
   try {
     const response = await fetch(url, { ...init, cache: "no-store", credentials: "same-origin", signal: controller.signal, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) } });
     const data = await response.json().catch(() => ({})) as T & { error?: string };
+    if (response.status === 401) {
+      window.dispatchEvent(new Event("pibrg-session-expired"));
+      throw new Error("Sua sessão expirou. Entre novamente para continuar.");
+    }
     if (!response.ok) throw new Error(data.error || "Não foi possível concluir a operação.");
     return data;
   } catch (error) {

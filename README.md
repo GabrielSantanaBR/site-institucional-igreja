@@ -19,7 +19,8 @@ essa integração não é o alvo de publicação desta versão e precisa de vali
 
 ## Acesso e proteção
 
-O painel fica em `/acesso-interno`. O administrador inicial usa as variáveis
+O painel fica em `/alteracao-de-dados`; `/acesso-interno` redireciona para ele.
+Os dois caminhos continuam exigindo login. O administrador inicial usa as variáveis
 `ADMIN_USERNAME` e `ADMIN_PASSWORD`; a equipe usa e-mail e senha definidos no painel.
 Permissões e bloqueios são verificados no servidor. Pedidos e conversas são
 criptografados no banco. Nunca versione senhas, chaves, bancos nem capturas privadas.

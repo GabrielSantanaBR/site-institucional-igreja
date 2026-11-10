@@ -35,6 +35,8 @@ async function api(path, body, { auth = true, extra = {}, expected = 200, method
 const mark = 'QA-' + randomBytes(6).toString('hex');
 try {
   await api('/api/health');
+  const alias = await api('/acesso-interno', undefined, {auth:false, expected:307});
+  assert.equal(new URL(alias.headers.get('location'),base).pathname,'/alteracao-de-dados');
   for (const page of ['/', '/agenda', '/galeria', '/fale-conosco', '/pedido-de-oracao', '/alteracao-de-dados']) await api(page, undefined, { auth: false });
   await api('/api/internal/settings', undefined, { auth: false, expected: 401 });
   await api('/api/internal/settings', undefined, { auth: false, extra: { 'oai-authenticated-user-email': 'spoof@example.invalid' }, expected: 401 });
