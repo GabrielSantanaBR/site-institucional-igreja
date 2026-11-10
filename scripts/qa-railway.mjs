@@ -20,7 +20,7 @@ if (process.argv.includes('--local')) {
   });
 } else {
   console.log('Ready for QA credentials on stdin (not echoed).');
-  let input = ''; for await (const chunk of process.stdin) input += chunk;
+  let input = ''; for await (const chunk of process.stdin) { input += chunk; if (input.includes('\n')) break; }
   configuration = JSON.parse(input);
 }
 const { base, username, password } = configuration;
