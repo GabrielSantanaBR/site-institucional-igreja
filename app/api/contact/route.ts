@@ -2,7 +2,7 @@ import { ensureDatabase, getD1, scheduleBackground } from "../../../db/runtime";
 import { createContactAccess, hashContactIp, hashContactToken, isContactAccess } from "../../../lib/contact-security";
 import { notifyContactByEmail } from "../../../lib/contact-notification";
 import { decryptPrivateData, encryptPrivateData } from "../../../lib/private-data";
-import { rejectCrossSiteMutation, readJsonObject } from "../../../lib/request-security";
+import { clientIp, rejectCrossSiteMutation, readJsonObject } from "../../../lib/request-security";
 
 const subjects = ["Secretaria", "Agenda e eventos", "Visita", "Ministérios", "Informações gerais", "Outro"];
 type StoredMessage = { id: number; sender: string; encryptedBody: string; authorName: string; readByVisitor: number; createdAt: string };
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     if (String(payload.website ?? "").trim()) return json({ ok: true }, 201);
     const action = clean(payload.action, 20);
     await ensureDatabase();
-    const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const ip = clientIp(request);
     const ipHash = await hashContactIp(ip);
     if (!(await allowMessage(ipHash))) return json({ error: "Muitas mensagens foram enviadas deste dispositivo. Tente novamente mais tarde." }, 429);
 

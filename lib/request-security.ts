@@ -1,5 +1,16 @@
 const MAX_JSON_BYTES = 80 * 1024;
 
+export function clientIp(request: Request) {
+  // Railway sets X-Real-IP at its public edge. Client-supplied Cloudflare and
+  // forwarded headers must not override that identity on the Node deployment.
+  if (process.env.APP_RUNTIME === "node") {
+    const ip = request.headers.get("x-real-ip")?.trim() ?? "";
+    return ip.length <= 45 && /^[0-9a-f:.]+$/i.test(ip) ? ip : "unknown";
+  }
+  return request.headers.get("cf-connecting-ip")?.trim()
+    || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
 export function rejectCrossSiteMutation(request: Request) {
   const fetchSite = request.headers.get("sec-fetch-site")?.toLowerCase();
   if (fetchSite && !["same-origin", "none"].includes(fetchSite)) {

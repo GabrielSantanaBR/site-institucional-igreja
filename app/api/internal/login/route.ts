@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ADMIN_COOKIE_NAME, ADMIN_SESSION_SECONDS, createAdminSession, validAdminCredentials } from "../../../../lib/admin-session";
 import { ensureDatabase, getD1, getRuntimeEnvironment } from "../../../../db/runtime";
-import { rejectCrossSiteMutation, readJsonObject } from "../../../../lib/request-security";
+import { clientIp, rejectCrossSiteMutation, readJsonObject } from "../../../../lib/request-security";
 
 const WINDOW_SECONDS = 15 * 60;
 const MAX_ATTEMPTS = 10;
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
 async function requestKey(request: Request) {
   const env = getRuntimeEnvironment();
-  const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  const ip = clientIp(request);
   const salt = env.ADMIN_SESSION_SECRET || env.IP_HASH_SALT || "pibrg-login";
   const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${ip.trim()}`));
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
